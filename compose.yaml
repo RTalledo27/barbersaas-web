@@ -1,0 +1,19 @@
+services:
+  angular:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: barbersaas_frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - barbersaas
+
+networks:
+  barbersaas:
+    driver: bridge

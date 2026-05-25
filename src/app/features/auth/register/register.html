@@ -1,0 +1,270 @@
+<!-- Header -->
+<div class="login-header">
+  <div class="register-step-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+    </svg>
+    14 días gratis · Sin tarjeta
+  </div>
+  <h2 class="login-title">Registra tu barbería</h2>
+  <p class="login-subtitle">Empieza a gestionar tu negocio hoy</p>
+</div>
+
+<!-- Error alert -->
+@if (error()) {
+  <div class="alert-error">
+    <div class="alert-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+<!-- Success -->
+@if (success()) {
+  <div class="alert-success">
+    <div class="alert-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="alert-success-title">¡Barbería registrada!</div>
+      <div class="alert-success-sub">Redirigiendo a tu panel...</div>
+    </div>
+  </div>
+}
+
+<!-- Form -->
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form">
+
+  <!-- Tenant name -->
+  <div class="form-field" [class.error]="isInvalid('tenant_name') || hasFieldError('tenant_name')">
+    <div class="input-wrapper">
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <input
+        id="tenant_name"
+        type="text"
+        formControlName="tenant_name"
+        placeholder=" "
+        autocomplete="organization"
+      />
+      <label for="tenant_name">Nombre de tu barbería</label>
+    </div>
+    <!-- Slug preview -->
+    @if (slugPreview()) {
+      <div class="slug-preview" [class.slug-error]="hasFieldError('tenant_slug')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>
+        </svg>
+        barberos.app/<strong>{{ slugPreview() }}</strong>
+      </div>
+    }
+    @if (hasFieldError('tenant_slug')) {
+      <span class="field-error">{{ getFieldError('tenant_slug') }}</span>
+    } @else if (isInvalid('tenant_name')) {
+      <span class="field-error">El nombre debe tener al menos 3 caracteres</span>
+    } @else if (hasFieldError('tenant_name')) {
+      <span class="field-error">{{ getFieldError('tenant_name') }}</span>
+    }
+  </div>
+
+  <!-- Owner name -->
+  <div class="form-field" [class.error]="isInvalid('name') || hasFieldError('name')">
+    <div class="input-wrapper">
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <input
+        id="name"
+        type="text"
+        formControlName="name"
+        placeholder=" "
+        autocomplete="name"
+      />
+      <label for="name">Tu nombre completo</label>
+    </div>
+    @if (isInvalid('name')) {
+      <span class="field-error">Tu nombre debe tener al menos 3 caracteres</span>
+    } @else if (hasFieldError('name')) {
+      <span class="field-error">{{ getFieldError('name') }}</span>
+    }
+  </div>
+
+  <!-- Email -->
+  <div class="form-field" [class.error]="isInvalid('email') || hasFieldError('email')">
+    <div class="input-wrapper">
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect width="20" height="16" x="2" y="4" rx="2"/>
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+      </svg>
+      <input
+        id="email"
+        type="email"
+        formControlName="email"
+        placeholder=" "
+        autocomplete="email"
+      />
+      <label for="email">Correo electrónico</label>
+    </div>
+    @if (isInvalid('email')) {
+      <span class="field-error">Ingresa un correo válido</span>
+    } @else if (hasFieldError('email')) {
+      <span class="field-error">{{ getFieldError('email') }}</span>
+    }
+  </div>
+
+  <!-- Phone (optional) -->
+  <div class="form-field">
+    <div class="input-wrapper">
+      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+      </svg>
+      <input
+        id="phone"
+        type="tel"
+        formControlName="phone"
+        placeholder=" "
+        autocomplete="tel"
+      />
+      <label for="phone">Teléfono <span class="field-optional">(opcional)</span></label>
+    </div>
+  </div>
+
+  <!-- Password row -->
+  <div class="password-row">
+
+    <!-- Password -->
+    <div class="form-field" [class.error]="isInvalid('password') || hasFieldError('password')">
+      <div class="input-wrapper">
+        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <input
+          id="password"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          placeholder=" "
+          autocomplete="new-password"
+        />
+        <label for="password">Contraseña</label>
+        <button type="button" class="toggle-password" (click)="togglePassword()">
+          @if (showPassword()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+              <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+              <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+              <line x1="2" x2="22" y1="2" y2="22"/>
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          }
+        </button>
+      </div>
+      @if (isInvalid('password')) {
+        <span class="field-error">Mínimo 8 caracteres</span>
+      } @else if (hasFieldError('password')) {
+        <span class="field-error">{{ getFieldError('password') }}</span>
+      }
+    </div>
+
+    <!-- Confirm password -->
+    <div class="form-field" [class.error]="passwordMismatch">
+      <div class="input-wrapper">
+        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <input
+          id="password_confirmation"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password_confirmation"
+          placeholder=" "
+          autocomplete="new-password"
+        />
+        <label for="password_confirmation">Confirmar</label>
+      </div>
+      @if (passwordMismatch) {
+        <span class="field-error">No coinciden</span>
+      }
+    </div>
+
+  </div>
+
+  <!-- Password strength -->
+  @if (form.get('password')?.value) {
+    <div class="password-strength">
+      <div class="strength-bars">
+        <div class="strength-bar" [class.active]="passwordStrength >= 1" [class.weak]="passwordStrength === 1" [class.medium]="passwordStrength === 2" [class.strong]="passwordStrength >= 3"></div>
+        <div class="strength-bar" [class.active]="passwordStrength >= 2" [class.medium]="passwordStrength === 2" [class.strong]="passwordStrength >= 3"></div>
+        <div class="strength-bar" [class.active]="passwordStrength >= 3" [class.strong]="passwordStrength >= 3"></div>
+        <div class="strength-bar" [class.active]="passwordStrength >= 4" [class.strong]="passwordStrength >= 4"></div>
+      </div>
+      <span class="strength-label" [class.weak]="passwordStrength === 1" [class.medium]="passwordStrength === 2" [class.strong]="passwordStrength >= 3">
+        {{ strengthLabel }}
+      </span>
+    </div>
+  }
+
+  <!-- Terms -->
+  <div class="terms-field" [class.error]="isInvalid('terms')">
+    <label class="terms-wrapper">
+      <input type="checkbox" formControlName="terms" />
+      <span class="checkbox-custom"></span>
+      <span class="terms-text">
+        Acepto los <a href="#" class="terms-link">Términos de uso</a>
+        y la <a href="#" class="terms-link">Política de privacidad</a>
+      </span>
+    </label>
+    @if (isInvalid('terms')) {
+      <span class="field-error terms-error">Debes aceptar los términos para continuar</span>
+    }
+  </div>
+
+  <!-- Submit -->
+  <button type="submit" class="submit-button" [disabled]="loading() || success()">
+    <span class="button-shimmer"></span>
+    @if (loading()) {
+      <svg class="spinner" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+        <path fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+      <span>Creando tu barbería...</span>
+    } @else {
+      <span>Crear mi barbería gratis</span>
+      <svg class="button-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    }
+  </button>
+
+</form>
+
+<!-- Divider -->
+<div class="divider-section">
+  <div class="divider-line"></div>
+  <span class="divider-text">¿Ya tienes cuenta?</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- Login CTA -->
+<a routerLink="/auth/login" class="register-cta">
+  <span>Iniciar sesión</span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+    <polyline points="10 17 15 12 10 7"/>
+    <line x1="15" y1="12" x2="3" y2="12"/>
+  </svg>
+</a>

@@ -1,0 +1,95 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #050505;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DESKTOP — sidebar fijo + contenido a la derecha
+═══════════════════════════════════════════════════════ */
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(201, 168, 76, 0.04) 0%, transparent 50%),
+    #0A0A0A;
+}
+
+/* Área de contenido — scroll interno solo en desktop */
+.app-content {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+  /* Scroll interno: la barra lateral permanece fija mientras el contenido scrollea */
+  height: calc(100vh - 64px);
+}
+
+.app-content::-webkit-scrollbar { width: 4px; }
+.app-content::-webkit-scrollbar-track { background: transparent; }
+.app-content::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+}
+.app-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+/* ─── Backdrop para drawer móvil ─── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 150;
+  animation: backdrop-in 0.2s ease-out;
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ≤ 1024px — Drawer mode
+   IMPORTANTE: usar display:block en lugar de grid.
+   Con display:grid y el sidebar en position:fixed,
+   el navegador sigue reservando una celda del grid para
+   el sidebar, empujando app-main hacia abajo.
+═══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .app-shell {
+    /* NO usar grid aquí — el sidebar fixed ocuparía
+       una celda invisible y desplazaría todo el contenido */
+    display: block;
+  }
+
+  .app-main {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  .app-content {
+    padding: 24px 20px;
+    /* En móvil: scroll natural del navegador, sin scroll interno.
+       Permite que la barra de navegación del browser se oculte
+       y que los gestos funcionen correctamente. */
+    height: auto;
+    overflow-y: visible;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ≤ 640px — Compact
+═══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .app-content {
+    padding: 16px 14px;
+  }
+}

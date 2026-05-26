@@ -8,6 +8,14 @@ export const routes: Routes = [
     loadChildren: () => import('./core/layout/shells/auth-shell/auth-shell.routes')
       .then(m => m.routes)
   },
+  {
+    path: 'app',
+    loadComponent: () => import('./core/layout/shells/app-shell/app-shell')
+      .then(m => m.AppShellComponent),
+    loadChildren: () => import('./core/layout/shells/app-shell/app-shell.routes')
+      .then(m => m.routes)
+  },
+
 
   {
     path: '',

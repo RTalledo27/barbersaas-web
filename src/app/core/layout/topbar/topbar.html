@@ -1,0 +1,156 @@
+<header class="topbar">
+
+  <!-- ═══════════════════════════════════════
+       LEFT: Burger (mobile) + Page info
+  ═══════════════════════════════════════ -->
+  <div class="topbar-left">
+
+    <button class="burger-btn" (click)="toggleMenu()" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <line x1="3" y1="7"  x2="21" y2="7"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="17" x2="21" y2="17"/>
+      </svg>
+    </button>
+
+    <div class="page-info">
+      <h1 class="page-title">{{ pageTitle() }}</h1>
+      <p class="page-subtitle">{{ pageSubtitle() }}</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       CENTER: Search (Cmd+K trigger)
+  ═══════════════════════════════════════ -->
+  <div class="topbar-center">
+    <button type="button" class="search-trigger" (click)="toggleSearch()">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span class="search-placeholder">Buscar citas, clientes, servicios...</span>
+      <kbd class="search-kbd">
+        <span>⌘</span><span>K</span>
+      </kbd>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       RIGHT: Date + Actions + Avatar
+  ═══════════════════════════════════════ -->
+  <div class="topbar-right">
+
+    <!-- Date pill -->
+    <div class="topbar-date">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect width="18" height="18" x="3" y="4" rx="2"/>
+        <path d="M16 2v4M8 2v4M3 10h18"/>
+      </svg>
+      <span>{{ today() }}</span>
+    </div>
+
+    <div class="topbar-divider"></div>
+
+    <!-- Quick action: New appointment -->
+    <button class="quick-action-btn" aria-label="Nueva cita">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span class="qa-label">Nueva cita</span>
+    </button>
+
+    <!-- Mobile search icon -->
+    <button class="icon-btn search-icon-btn" (click)="toggleSearch()" aria-label="Buscar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+
+    <!-- Notifications -->
+    <button class="icon-btn notifications-btn" aria-label="Notificaciones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+      </svg>
+      @if (notifications() > 0) {
+        <span class="notification-badge">{{ notifications() }}</span>
+      }
+    </button>
+
+    <!-- ─── User avatar dropdown ─── -->
+    <div class="user-menu-wrap">
+      <button
+        class="user-avatar-btn"
+        [class.active]="userMenuOpen()"
+        (click)="toggleUserMenu($event)"
+        aria-label="Menú de usuario">
+        <span class="user-avatar">{{ userInitial() }}</span>
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+
+      @if (userMenuOpen()) {
+        <div class="user-menu" (click)="$event.stopPropagation()">
+
+          <!-- Header -->
+          <div class="um-header">
+            <div class="um-avatar-lg">{{ userInitial() }}</div>
+            <div class="um-info">
+              <div class="um-name">{{ userName() }}</div>
+              <div class="um-email">{{ userEmail() }}</div>
+              @if (userRole()) {
+                <div class="um-role">
+                  <span class="um-role-dot"></span>
+                  {{ userRole() }}
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="um-divider"></div>
+
+          <a class="um-item" routerLink="/app/settings" (click)="closeUserMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Mi perfil</span>
+          </a>
+
+          <a class="um-item" routerLink="/app/settings" (click)="closeUserMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Configuración</span>
+          </a>
+
+          <a class="um-item" routerLink="/app/help" (click)="closeUserMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+            </svg>
+            <span>Ayuda y soporte</span>
+          </a>
+
+          <div class="um-divider"></div>
+
+          <button class="um-item um-item-danger" (click)="logout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Cerrar sesión</span>
+          </button>
+
+        </div>
+      }
+    </div>
+
+  </div>
+
+</header>

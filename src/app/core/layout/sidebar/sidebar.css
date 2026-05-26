@@ -1,0 +1,436 @@
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════ */
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  background: #0A0A0A;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+/* Close button — only visible on mobile drawer */
+.sidebar-close {
+  display: none;
+  width: 32px; height: 32px;
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  color: #9A9A9A;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.sidebar-close:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #FCA5A5;
+}
+.sidebar-close svg { width: 16px; height: 16px; }
+
+/* ═══════════════════════════════════════════════════════
+   BRAND
+═══════════════════════════════════════════════════════ */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.brand-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #E8C96A 0%, #C9A84C 50%, #A67C35 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0A0A0A;
+  box-shadow:
+    0 4px 12px rgba(201, 168, 76, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.brand-icon svg { width: 22px; height: 22px; }
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #F2F0EB;
+  letter-spacing: -0.01em;
+}
+.brand-version {
+  font-size: 10px;
+  color: #7A7A7A;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TENANT CARD
+═══════════════════════════════════════════════════════ */
+.tenant-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin: 12px 0 18px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.08) 0%, rgba(201, 168, 76, 0.02) 100%);
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tenant-card:hover {
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.12) 0%, rgba(201, 168, 76, 0.04) 100%);
+  border-color: rgba(201, 168, 76, 0.2);
+}
+
+.tenant-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #C9A84C, #A67C35);
+  color: #0A0A0A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.tenant-info {
+  flex: 1;
+  min-width: 0;
+}
+.tenant-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F2F0EB;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tenant-plan {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #C9A84C;
+  font-weight: 500;
+  margin-top: 1px;
+  letter-spacing: 0.02em;
+}
+.plan-dot {
+  width: 5px; height: 5px;
+  background: #C9A84C;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #C9A84C;
+}
+
+.tenant-action {
+  background: none;
+  border: none;
+  color: #7A7A7A;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.tenant-action svg { width: 14px; height: 14px; }
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════ */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.sidebar-nav-bottom {
+  /* En desktop: empuja la sección Cuenta al fondo del sidebar */
+  margin-top: auto;
+}
+
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #5A5A5A;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 12px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #9A9A9A;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #F2F0EB;
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.12) 0%, rgba(201, 168, 76, 0.04) 100%);
+  color: #F2F0EB;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: #C9A84C;
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.6);
+}
+
+.nav-item.active .nav-icon {
+  color: #C9A84C;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  color: #7A7A7A;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.nav-icon svg { width: 100%; height: 100%; }
+
+.nav-item:hover .nav-icon { color: #F2F0EB; }
+
+.nav-label { flex: 1; }
+
+.nav-badge {
+  background: rgba(201, 168, 76, 0.15);
+  color: #C9A84C;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  min-width: 22px;
+  text-align: center;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════
+   UPGRADE CARD
+═══════════════════════════════════════════════════════ */
+.upgrade-card {
+  margin: 14px 4px;
+  padding: 14px;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at top right, rgba(232, 201, 106, 0.15) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(201, 168, 76, 0.06) 0%, rgba(166, 124, 53, 0.02) 100%);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.upgrade-card::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(232, 201, 106, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.upgrade-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #E8C96A, #C9A84C);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0A0A0A;
+  margin-bottom: 8px;
+}
+.upgrade-icon svg { width: 16px; height: 16px; }
+
+.upgrade-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #F2F0EB;
+  margin-bottom: 2px;
+}
+.upgrade-desc {
+  font-size: 11px;
+  color: #9A9A9A;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.upgrade-button {
+  width: 100%;
+  padding: 8px;
+  background: linear-gradient(135deg, #C9A84C 0%, #A67C35 100%);
+  color: #0A0A0A;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+}
+.upgrade-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOGOUT CARD
+═══════════════════════════════════════════════════════ */
+.logout-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.logout-card:hover {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.logout-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2A2A2A, #1A1A1A);
+  color: #F2F0EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.logout-info {
+  flex: 1;
+  min-width: 0;
+}
+.logout-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #F2F0EB;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.logout-email {
+  font-size: 10.5px;
+  color: #7A7A7A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.logout-icon {
+  width: 14px; height: 14px;
+  color: #7A7A7A;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.logout-card:hover .logout-icon { color: #EF4444; }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — Drawer mode below 1024px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 200;
+    transform: translateX(-100%);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.5);
+
+    /* CRÍTICO: cambiar a block para que los ítems usen su altura
+       natural. Con display:flex, flex-shrink:1 (default) encoge los
+       hijos para intentar que todo quepa en 100dvh ANTES de activar
+       el scroll — el upgrade-card quedaba aplastado a ~28px. */
+    display: block;
+
+    overflow-y: scroll;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    /* Espacio para la barra de gestos/navegación de Android */
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: inline-flex;
+  }
+
+  /* En mobile el margin-top:auto impide que el scroll se active —
+     el browser consume el espacio libre antes de decidir hacer overflow.
+     Lo reemplazamos por un gap fijo para que todo fluya linealmente. */
+  .sidebar-nav-bottom {
+    margin-top: 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+  }
+}
+
+@media (max-width: 420px) {
+  .sidebar {
+    width: 88vw;
+    max-width: 320px;
+  }
+}

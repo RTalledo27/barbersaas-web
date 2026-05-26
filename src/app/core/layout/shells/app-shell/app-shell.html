@@ -1,0 +1,15 @@
+<div class="app-shell">
+  <app-sidebar />
+
+  <!-- Backdrop visible solo cuando el sidebar está abierto en mobile -->
+  @if (sidebarOpen()) {
+    <div class="sidebar-backdrop" (click)="closeSidebar()"></div>
+  }
+
+  <div class="app-main">
+    <app-topbar />
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

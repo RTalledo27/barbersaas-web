@@ -1,0 +1,258 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Configuración</h1>
+      <p class="page-subtitle">Ajustes generales de tu barbería</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      Cargando configuración…
+    </div>
+  } @else {
+
+    <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab() === 'general'"
+              (click)="activeTab.set('general')">General</button>
+      <button class="tab" [class.active]="activeTab() === 'localization'"
+              (click)="activeTab.set('localization')">Localización</button>
+      <button class="tab" [class.active]="activeTab() === 'plan'"
+              (click)="activeTab.set('plan')">Plan & límites</button>
+    </div>
+
+    <!-- Mensajes -->
+    @if (success()) {
+      <div class="alert-success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        {{ success() }}
+      </div>
+    }
+    @if (error()) {
+      <div class="alert-error">{{ error() }}</div>
+    }
+
+    <!-- ══════════════════════════════
+         TAB: GENERAL
+    ══════════════════════════════ -->
+    @if (activeTab() === 'general') {
+      <div class="settings-layout">
+
+        <!-- Logo / identidad -->
+        <div class="settings-card">
+          <div class="card-title">Identidad de la barbería</div>
+
+          <div class="logo-section">
+            <div class="logo-preview">
+              @if (form.logo_url) {
+                <img [src]="form.logo_url" alt="Logo" class="logo-img" />
+              } @else {
+                <span class="logo-initial">{{ logoInitial() }}</span>
+              }
+            </div>
+            <div class="logo-info">
+              <div class="logo-label">Logo actual</div>
+              <div class="logo-hint">Ingresa la URL de tu logo. Recomendado: 200×200px PNG</div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">URL del logo</label>
+            <input class="field-input" type="url" [(ngModel)]="form.logo_url"
+                   placeholder="https://mi-barberia.com/logo.png" />
+          </div>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="settings-card">
+          <div class="card-title">Datos del negocio</div>
+
+          <div class="fields-grid">
+            <div class="field-group">
+              <label class="field-label">Nombre de la barbería <span class="req">*</span></label>
+              <input class="field-input" type="text" [(ngModel)]="form.name"
+                     placeholder="Mi Barbería" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Email de contacto</label>
+              <input class="field-input" type="email" [(ngModel)]="form.email"
+                     placeholder="contacto@mibarberia.com" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Teléfono</label>
+              <input class="field-input" type="tel" [(ngModel)]="form.phone"
+                     placeholder="+51 999 999 999" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Ciudad</label>
+              <input class="field-input" type="text" [(ngModel)]="form.city"
+                     placeholder="Lima" />
+            </div>
+            <div class="field-group span-2">
+              <label class="field-label">Dirección</label>
+              <input class="field-input" type="text" [(ngModel)]="form.address"
+                     placeholder="Av. Principal 123" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Slug (solo lectura) -->
+        <div class="settings-card">
+          <div class="card-title">Enlace de reservas públicas</div>
+          <div class="slug-display">
+            <span class="slug-base">localhost:4200/booking/</span>
+            <span class="slug-value">{{ tenant()?.slug }}</span>
+          </div>
+          <p class="slug-hint">Este es el enlace que puedes compartir con tus clientes para que reserven online.</p>
+        </div>
+
+      </div>
+    }
+
+    <!-- ══════════════════════════════
+         TAB: LOCALIZACIÓN
+    ══════════════════════════════ -->
+    @if (activeTab() === 'localization') {
+      <div class="settings-layout">
+        <div class="settings-card">
+          <div class="card-title">Región y moneda</div>
+
+          <div class="fields-grid">
+            <div class="field-group">
+              <label class="field-label">País</label>
+              <div class="select-wrap">
+                <select class="field-select" [(ngModel)]="form.country_code">
+                  <option value="">Seleccionar país</option>
+                  @for (c of COUNTRIES; track c.code) {
+                    <option [value]="c.code">{{ c.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">Moneda</label>
+              <div class="select-wrap">
+                <select class="field-select" [(ngModel)]="form.currency">
+                  @for (c of CURRENCIES; track c.code) {
+                    <option [value]="c.code">{{ c.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group span-2">
+              <label class="field-label">Zona horaria</label>
+              <div class="select-wrap">
+                <select class="field-select" [(ngModel)]="form.timezone">
+                  @for (tz of TIMEZONES; track tz) {
+                    <option [value]="tz">{{ tz }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="locale-preview">
+            <div class="locale-item">
+              <span class="locale-key">Moneda seleccionada</span>
+              <span class="locale-val">{{ form.currency || '—' }}</span>
+            </div>
+            <div class="locale-item">
+              <span class="locale-key">Zona horaria</span>
+              <span class="locale-val">{{ form.timezone || '—' }}</span>
+            </div>
+            <div class="locale-item">
+              <span class="locale-key">País</span>
+              <span class="locale-val">{{ form.country_code || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ══════════════════════════════
+         TAB: PLAN
+    ══════════════════════════════ -->
+    @if (activeTab() === 'plan') {
+      <div class="settings-layout">
+        <div class="settings-card plan-card">
+          <div class="plan-header">
+            <div class="plan-badge" [style.background]="planColor() + '20'" [style.color]="planColor()" [style.borderColor]="planColor() + '40'">
+              {{ planLabel() }}
+            </div>
+            @if ((tenant()?.plan?.name ?? 'free') === 'free') {
+              <button class="upgrade-btn">Mejorar a Pro →</button>
+            }
+          </div>
+
+          <div class="plan-limits">
+            <div class="limit-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <div>
+                <div class="limit-label">Barberos máx.</div>
+                <div class="limit-val">{{ tenant()?.plan?.max_employees ?? '—' }}</div>
+              </div>
+            </div>
+            <div class="limit-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <circle cx="6" cy="6" r="3"/>
+                <circle cx="6" cy="18" r="3"/>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+                <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+                <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+              </svg>
+              <div>
+                <div class="limit-label">Servicios máx.</div>
+                <div class="limit-val">{{ tenant()?.plan?.max_services ?? '—' }}</div>
+              </div>
+            </div>
+          </div>
+
+          @if ((tenant()?.plan?.name ?? 'free') === 'free') {
+            <div class="plan-features">
+              <div class="feature-title">¿Qué incluye Pro?</div>
+              @for (f of ['Barberos ilimitados','Servicios ilimitados','Portal de reservas online','Reportes avanzados','Soporte prioritario','Integración WhatsApp']; track f) {
+                <div class="feature-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2.5" width="14" height="14">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                  {{ f }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Footer con botón guardar (no en tab Plan) ──────────────────── -->
+    @if (activeTab() !== 'plan') {
+      <div class="save-footer">
+        <button class="save-btn" (click)="save()" [disabled]="saving()">
+          @if (saving()) { <span class="btn-spinner"></span> Guardando… }
+          @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Guardar cambios
+          }
+        </button>
+      </div>
+    }
+
+  }
+</div>

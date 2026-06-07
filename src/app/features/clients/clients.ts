@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   ClientsApiService,
   ClientLight,
@@ -29,7 +30,8 @@ const SOURCE_LABELS: Record<string, string> = {
   styleUrl: './clients.css',
 })
 export class ClientsComponent implements OnInit {
-  private api = inject(ClientsApiService);
+  private api    = inject(ClientsApiService);
+  private router = inject(Router);
 
   // ── Estado principal ──────────────────────────────────────────────
   loading  = signal(true);
@@ -109,6 +111,11 @@ export class ClientsComponent implements OnInit {
     if (type === 'vip')      this.filterVip.set(!this.filterVip());
     if (type === 'inactive') this.filterInactive.set(!this.filterInactive());
     this.load(1);
+  }
+
+  // ── Navegar a perfil completo ─────────────────────────────────────
+  goProfile(c: ClientLight): void {
+    this.router.navigate(['/app/clients', c.id]);
   }
 
   // ── Detalle ───────────────────────────────────────────────────────

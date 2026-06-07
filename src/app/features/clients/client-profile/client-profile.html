@@ -1,0 +1,165 @@
+<div class="page-wrapper">
+
+  <!-- ── Back ───────────────────────────────────────────────────────────── -->
+  <button class="back-btn" (click)="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
+    </svg>
+    Volver a clientes
+  </button>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      Cargando perfil…
+    </div>
+  } @else if (error()) {
+    <div class="error-state">{{ error() }}</div>
+  } @else if (client(); as c) {
+
+    <!-- ── Hero ────────────────────────────────────────────────────────── -->
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="hero-avatar">
+          {{ initial(c.name) }}
+          @if (c.is_vip) {
+            <span class="vip-crown" title="VIP">👑</span>
+          }
+        </div>
+        <div class="hero-info">
+          <div class="hero-name">
+            {{ c.name }}
+            @if (c.is_birthday) {
+              <span class="birthday-badge">🎂 Cumpleaños</span>
+            }
+          </div>
+          <div class="hero-meta">
+            @if (c.phone) { <span>📞 {{ c.phone }}</span> }
+            @if (c.email) { <span>✉️ {{ c.email }}</span> }
+            @if (c.birthdate) { <span>🎂 {{ formatDate(c.birthdate) }}</span> }
+          </div>
+          @if (c.preferred_employee) {
+            <div class="hero-pref">
+              Barbero preferido: <strong>{{ c.preferred_employee.name }}</strong>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="hero-kpis">
+        <div class="kpi">
+          <div class="kpi-val">{{ c.total_visits }}</div>
+          <div class="kpi-lbl">Visitas</div>
+        </div>
+        <div class="kpi-sep"></div>
+        <div class="kpi">
+          <div class="kpi-val gold">S/ {{ c.total_spent | number:'1.2-2' }}</div>
+          <div class="kpi-lbl">Total gastado</div>
+        </div>
+        <div class="kpi-sep"></div>
+        <div class="kpi">
+          <div class="kpi-val">{{ sinceLastVisit() }}</div>
+          <div class="kpi-lbl">Última visita</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab() === 'history'"
+              (click)="activeTab.set('history')">
+        Historial de citas
+        <span class="tab-count">{{ c.recent_appointments?.length ?? 0 }}</span>
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'notes'"
+              (click)="activeTab.set('notes')">
+        Notas
+        <span class="tab-count">{{ c.notes?.length ?? 0 }}</span>
+      </button>
+    </div>
+
+    <!-- ══ HISTORIAL ══ -->
+    @if (activeTab() === 'history') {
+      @if (!c.recent_appointments?.length) {
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+            <rect width="18" height="18" x="3" y="4" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+          <span>Sin historial de citas</span>
+        </div>
+      } @else {
+        <div class="history-list">
+          @for (apt of c.recent_appointments; track apt.id) {
+            <div class="history-item">
+              <div class="hi-dot" [style.background]="STATUS_COLOR[apt.status] ?? '#666'"></div>
+              <div class="hi-body">
+                <div class="hi-top">
+                  <span class="hi-service">{{ apt.service ?? '—' }}</span>
+                  <span class="hi-status" [style.color]="STATUS_COLOR[apt.status] ?? '#666'">
+                    {{ STATUS_LABEL[apt.status] ?? apt.status }}
+                  </span>
+                </div>
+                <div class="hi-bottom">
+                  <span class="hi-date">{{ formatDate(apt.date) }}</span>
+                  @if (apt.employee) { <span class="hi-emp">· {{ apt.employee }}</span> }
+                  @if (apt.price) { <span class="hi-price">· S/ {{ apt.price | number:'1.2-2' }}</span> }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- ══ NOTAS ══ -->
+    @if (activeTab() === 'notes') {
+      <!-- Input nueva nota -->
+      <div class="note-input-card">
+        <textarea class="note-textarea" [(ngModel)]="noteText"
+                  placeholder="Agregar nota sobre este cliente… (preferencias, alergias, etc.)"
+                  rows="3"></textarea>
+        <div class="note-actions">
+          <button class="note-save-btn" (click)="addNote()"
+                  [disabled]="!noteText().trim() || savingNote()">
+            @if (savingNote()) { <span class="btn-spinner"></span> }
+            Guardar nota
+          </button>
+        </div>
+      </div>
+
+      @if (!c.notes?.length) {
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>Sin notas aún</span>
+        </div>
+      } @else {
+        <div class="notes-list">
+          @for (note of c.notes; track note.id) {
+            <div class="note-item">
+              <div class="note-content">{{ note.content }}</div>
+              <div class="note-footer">
+                <span class="note-meta">
+                  {{ note.created_by?.name ?? 'Sistema' }} · {{ formatDateTime(note.created_at) }}
+                </span>
+                <button class="note-delete" (click)="deleteNote(note.id)" title="Eliminar nota">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+
+  }
+</div>

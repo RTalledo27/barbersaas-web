@@ -3,6 +3,7 @@ import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../auth/auth.service';
 import { LayoutService } from '../layout.service';
+import { AgendaBadgeService } from '../../services/agenda-badge.service';
 
 @Component({
   selector: 'app-topbar',
@@ -15,13 +16,14 @@ export class TopbarComponent {
   private router = inject(Router);
   private auth   = inject(AuthService);
   private layout = inject(LayoutService);
+  private badge  = inject(AgendaBadgeService);
 
   // ─── Page meta ───────────────────────────────────────
   pageTitle    = signal('Dashboard');
   pageSubtitle = signal('Resumen general de tu barbería');
 
-  // ─── UI state ────────────────────────────────────────
-  notifications = signal(3);
+  // ─── Notificaciones → citas pendientes+confirmadas hoy ─
+  notifications = computed(() => this.badge.todayActive() ?? 0);
   searchOpen    = signal(false);
   userMenuOpen  = signal(false);
 
@@ -48,6 +50,7 @@ export class TopbarComponent {
     '/app/clients':      { title: 'Clientes',      subtitle: 'CRM y base de clientes' },
     '/app/team':         { title: 'Equipo',        subtitle: 'Barberos y horarios' },
     '/app/services':     { title: 'Servicios',     subtitle: 'Catálogo y precios' },
+    '/app/payments':     { title: 'Caja',          subtitle: 'Cobros y comprobantes' },
     '/app/revenue':      { title: 'Ingresos',      subtitle: 'Caja, gastos y comisiones' },
     '/app/analytics':    { title: 'Estadísticas',  subtitle: 'Reportes y métricas' },
     '/app/settings':     { title: 'Configuración', subtitle: 'Ajustes de la barbería' },

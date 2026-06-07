@@ -33,6 +33,18 @@ export const routes: Routes = [
     title: 'Clientes — BarberOS'
   },
   {
+    path: 'clients/:id',
+    loadComponent: () => import('../../../../features/clients/client-profile/client-profile')
+      .then(m => m.ClientProfileComponent),
+    title: 'Perfil de cliente — BarberOS'
+  },
+  {
+    path: 'settings',
+    loadComponent: () => import('../../../../features/settings/settings')
+      .then(m => m.SettingsComponent),
+    title: 'Configuración — BarberOS'
+  },
+  {
     path: 'payments',
     loadComponent: () => import('../../../../features/payments/payments')
       .then(m => m.PaymentsComponent),

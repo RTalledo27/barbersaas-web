@@ -1,0 +1,349 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Caja</h1>
+      <span class="page-subtitle">{{ dateRangeLabel() }}</span>
+    </div>
+
+    <!-- Período -->
+    <div class="period-tabs">
+      @for (p of [['today','Hoy'],['week','Semana'],['month','Mes']] ; track p[0]) {
+        <button class="period-tab" [class.active]="periodPreset() === p[0]"
+                (click)="applyPreset($any(p[0]))">{{ p[1] }}</button>
+      }
+      <button class="period-tab" [class.active]="periodPreset() === 'custom'"
+              (click)="applyPreset('custom')">Rango</button>
+    </div>
+  </div>
+
+  <!-- Custom date range -->
+  @if (periodPreset() === 'custom') {
+    <div class="custom-range-bar">
+      <input type="date" class="range-input" [ngModel]="filterFrom()" (ngModelChange)="filterFrom.set($event)" />
+      <span class="range-sep">—</span>
+      <input type="date" class="range-input" [ngModel]="filterTo()" (ngModelChange)="filterTo.set($event)" />
+      <button class="range-apply-btn" (click)="applyCustom()">Aplicar</button>
+    </div>
+  }
+
+  <!-- ── KPIs ────────────────────────────────────────────────────────────── -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Total cobrado</div>
+      @if (statsLoading()) {
+        <div class="kpi-skeleton"></div>
+      } @else {
+        <div class="kpi-value">S/ {{ stats()?.total_income | number:'1.2-2' }}</div>
+        <div class="kpi-foot">{{ stats()?.total_count }} cobros</div>
+      }
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ticket promedio</div>
+      @if (statsLoading()) {
+        <div class="kpi-skeleton"></div>
+      } @else {
+        <div class="kpi-value">S/ {{ stats()?.avg_ticket | number:'1.2-2' }}</div>
+      }
+    </div>
+    <div class="kpi-card kpi-warn">
+      <div class="kpi-label">Cobros pendientes</div>
+      @if (statsLoading()) {
+        <div class="kpi-skeleton"></div>
+      } @else {
+        <div class="kpi-value">S/ {{ stats()?.pending | number:'1.2-2' }}</div>
+        <div class="kpi-foot">citas completadas sin pagar</div>
+      }
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Con comprobante</div>
+      @if (statsLoading()) {
+        <div class="kpi-skeleton"></div>
+      } @else {
+        <div class="kpi-value">{{ stats()?.with_voucher }}</div>
+        <div class="kpi-foot">de {{ stats()?.total_count }} cobros</div>
+      }
+    </div>
+  </div>
+
+  <!-- Métodos de pago breakdown -->
+  @if (!statsLoading() && methodBreakdown().length > 0) {
+    <div class="method-breakdown">
+      @for (m of methodBreakdown(); track m.label) {
+        <div class="method-item">
+          <span class="method-icon">{{ methodIcon(m.label) }}</span>
+          <div class="method-body">
+            <div class="method-label-row">
+              <span class="method-name">{{ m.label }}</span>
+              <span class="method-pct">{{ m.pct }}%</span>
+            </div>
+            <div class="method-bar-bg">
+              <div class="method-bar-fill" [style.width.%]="m.pct"></div>
+            </div>
+          </div>
+          <span class="method-val">S/ {{ m.value | number:'1.2-2' }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Filtros ─────────────────────────────────────────────────────────── -->
+  <div class="filters-bar">
+    <select class="filter-select" [ngModel]="filterEmpId()"
+            (ngModelChange)="filterEmpId.set($event); onFilterChange()">
+      <option value="">Todos los barberos</option>
+      @for (e of employees(); track e.id) {
+        <option [value]="e.id">{{ e.name }}</option>
+      }
+    </select>
+
+    <select class="filter-select" [ngModel]="filterMethod()"
+            (ngModelChange)="filterMethod.set($event); onFilterChange()">
+      @for (m of METHODS; track m.value) {
+        <option [value]="m.value">{{ m.label }}</option>
+      }
+    </select>
+
+    <select class="filter-select" [ngModel]="filterVoucher()"
+            (ngModelChange)="filterVoucher.set($any($event)); onFilterChange()">
+      <option value="">Todos</option>
+      <option value="1">Con comprobante</option>
+      <option value="0">Sin comprobante</option>
+    </select>
+  </div>
+
+  <!-- ── Tabla ───────────────────────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="table-loading">
+        <div class="spinner"></div>
+        Cargando cobros…
+      </div>
+    } @else if (error()) {
+      <div class="table-empty">{{ error() }}</div>
+    } @else if (records().length === 0) {
+      <div class="table-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+          <path d="M9 14l2 2 4-4"/>
+          <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/>
+          <circle cx="18" cy="18" r="4"/>
+        </svg>
+        <span>No hay cobros en este período</span>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Servicio</th>
+            <th>Barbero</th>
+            <th>Método</th>
+            <th>Estado</th>
+            <th class="col-right">Monto</th>
+            <th class="col-center">Voucher</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of records(); track r.id) {
+            <tr class="data-row" (click)="openDrawer(r)">
+              <td class="col-date">{{ formatDate(r.date) }}</td>
+              <td class="col-client">
+                <div class="client-cell">
+                  <div class="client-avatar-sm">
+                    {{ (r.appointment?.client?.name ?? '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <div class="client-name">{{ r.appointment?.client?.name ?? '—' }}</div>
+                    <div class="client-phone">{{ r.appointment?.client?.phone ?? '' }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="col-service">{{ r.service?.name ?? '—' }}</td>
+              <td class="col-emp">
+                <div class="emp-cell">
+                  <div class="emp-dot" [style.background]="r.employee?.color ?? '#C9A84C'"></div>
+                  {{ r.employee?.name ?? '—' }}
+                </div>
+              </td>
+              <td class="col-method">
+                <span class="method-badge">
+                  {{ methodIcon(r.payment_method) }} {{ METHOD_LABELS[r.payment_method] ?? r.payment_method }}
+                </span>
+              </td>
+              <td class="col-status">
+                <span class="status-dot"
+                      [style.background]="statusColor(r.payment_status)"
+                      [style.boxShadow]="'0 0 0 4px ' + statusColor(r.payment_status) + '22'">
+                </span>
+                {{ STATUS_LABELS[r.payment_status ?? ''] ?? '—' }}
+              </td>
+              <td class="col-amount">S/ {{ r.gross_amount | number:'1.2-2' }}</td>
+              <td class="col-voucher" (click)="$event.stopPropagation()">
+                @if (r.voucher_url) {
+                  <a [href]="r.voucher_url" target="_blank" class="voucher-icon has-voucher" title="Ver comprobante">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                  </a>
+                } @else {
+                  <span class="voucher-icon no-voucher" title="Sin comprobante">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Paginación -->
+      @if ((meta()?.last_page ?? 1) > 1) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="page() === 1" (click)="goPage(page() - 1)">‹</button>
+          @for (p of pages(); track p) {
+            <button class="page-btn" [class.active]="p === page()" (click)="goPage(p)">{{ p }}</button>
+          }
+          <button class="page-btn" [disabled]="page() === meta()?.last_page" (click)="goPage(page() + 1)">›</button>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DRAWER — detalle del cobro
+══════════════════════════════════════════════ -->
+@if (drawerRecord()) {
+  <div class="drawer-backdrop" (click)="closeDrawer()"></div>
+  <div class="drawer-panel">
+
+    <div class="drawer-header">
+      <div class="drawer-title">Detalle del cobro</div>
+      <button class="drawer-close" (click)="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Monto destacado -->
+      <div class="drawer-amount-hero">
+        <div class="hero-label">Monto cobrado</div>
+        <div class="hero-value">S/ {{ drawerRecord()!.gross_amount | number:'1.2-2' }}</div>
+        <span class="hero-status" [style.color]="statusColor(drawerRecord()!.payment_status)">
+          {{ STATUS_LABELS[drawerRecord()!.payment_status ?? ''] ?? '—' }}
+        </span>
+      </div>
+
+      <div class="drawer-divider"></div>
+
+      <!-- Info -->
+      <div class="drawer-grid">
+        <div class="drawer-cell">
+          <div class="drawer-label">Fecha</div>
+          <div class="drawer-val">{{ formatDate(drawerRecord()!.date) }}</div>
+        </div>
+        <div class="drawer-cell">
+          <div class="drawer-label">Hora</div>
+          <div class="drawer-val">{{ drawerRecord()!.appointment?.start_time ?? '—' }}</div>
+        </div>
+        <div class="drawer-cell">
+          <div class="drawer-label">Método</div>
+          <div class="drawer-val">
+            {{ methodIcon(drawerRecord()!.payment_method) }}
+            {{ METHOD_LABELS[drawerRecord()!.payment_method] ?? drawerRecord()!.payment_method }}
+          </div>
+        </div>
+        <div class="drawer-cell">
+          <div class="drawer-label">Comisión</div>
+          <div class="drawer-val">S/ {{ drawerRecord()!.commission_amount | number:'1.2-2' }}</div>
+        </div>
+        <div class="drawer-cell">
+          <div class="drawer-label">Neto barbería</div>
+          <div class="drawer-val gold">S/ {{ drawerRecord()!.net_amount | number:'1.2-2' }}</div>
+        </div>
+      </div>
+
+      <div class="drawer-divider"></div>
+
+      <!-- Cliente -->
+      @if (drawerRecord()!.appointment?.client) {
+        <div class="drawer-section-title">Cliente</div>
+        <div class="drawer-client">
+          <div class="drawer-avatar">
+            {{ drawerRecord()!.appointment!.client!.name.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <div class="drawer-val">{{ drawerRecord()!.appointment!.client!.name }}</div>
+            <div class="drawer-label">{{ drawerRecord()!.appointment!.client!.phone }}</div>
+          </div>
+        </div>
+        <div class="drawer-divider"></div>
+      }
+
+      <!-- Servicio / Barbero -->
+      <div class="drawer-grid">
+        <div class="drawer-cell">
+          <div class="drawer-label">Servicio</div>
+          <div class="drawer-val">{{ drawerRecord()!.service?.name ?? '—' }}</div>
+        </div>
+        <div class="drawer-cell">
+          <div class="drawer-label">Barbero</div>
+          <div class="drawer-val">
+            <span class="emp-dot-sm" [style.background]="drawerRecord()!.employee?.color ?? '#C9A84C'"></span>
+            {{ drawerRecord()!.employee?.name ?? '—' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-divider"></div>
+
+      <!-- Comprobante -->
+      <div class="drawer-section-title">Comprobante de pago</div>
+
+      @if (voucherUploading()) {
+        <div class="voucher-loading">
+          <div class="spinner-sm"></div>
+          Procesando…
+        </div>
+      } @else if (drawerRecord()!.voucher_url) {
+        <div class="voucher-preview">
+          @if (isPdf(drawerRecord()!.voucher_url)) {
+            <a class="voucher-pdf" [href]="drawerRecord()!.voucher_url" target="_blank">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Ver PDF
+            </a>
+          } @else {
+            <a [href]="drawerRecord()!.voucher_url" target="_blank">
+              <img class="voucher-img" [src]="drawerRecord()!.voucher_url" alt="Comprobante" />
+            </a>
+          }
+          <div class="voucher-row">
+            <label class="voucher-btn-replace">
+              <input type="file" accept="image/*,.pdf" (change)="onVoucherSelected($event)" hidden />
+              Reemplazar
+            </label>
+            <button class="voucher-btn-delete" (click)="doDeleteVoucher()">Eliminar</button>
+          </div>
+        </div>
+      } @else {
+        <label class="voucher-upload-zone">
+          <input type="file" accept="image/*,.pdf" (change)="onVoucherSelected($event)" hidden />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>Subir comprobante</span>
+          <span class="upload-hint">JPG, PNG, PDF · máx 5 MB</span>
+        </label>
+      }
+
+    </div>
+  </div>
+}

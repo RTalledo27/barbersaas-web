@@ -1,0 +1,320 @@
+<div class="agenda-container">
+
+  <!-- ═══════════════════════════════════════════════════
+       TOOLBAR
+  ═══════════════════════════════════════════════════ -->
+  <div class="agenda-toolbar">
+
+    <!-- Navegación de fecha -->
+    <div class="date-nav">
+      <button class="nav-arrow" (click)="prevDay()" title="Día anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <div class="date-display">
+        <span class="date-text">{{ selectedDateLabel() }}</span>
+      </div>
+      <button class="nav-arrow" (click)="nextDay()" title="Día siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+      @if (!isToday()) {
+        <button class="today-btn" (click)="goToday()">Hoy</button>
+      }
+    </div>
+
+    <!-- Stats del día -->
+    <div class="day-stats">
+      <div class="stat-chip">
+        <span class="stat-num">{{ totalToday() }}</span>
+        <span class="stat-lbl">citas</span>
+      </div>
+      @if (pendingCount() > 0) {
+        <div class="stat-chip pending">
+          <span class="stat-num">{{ pendingCount() }}</span>
+          <span class="stat-lbl">pendientes</span>
+        </div>
+      }
+      @if (confirmedCount() > 0) {
+        <div class="stat-chip confirmed">
+          <span class="stat-num">{{ confirmedCount() }}</span>
+          <span class="stat-lbl">confirmadas</span>
+        </div>
+      }
+      @if (completedCount() > 0) {
+        <div class="stat-chip completed">
+          <span class="stat-num">{{ completedCount() }}</span>
+          <span class="stat-lbl">completadas</span>
+        </div>
+      }
+    </div>
+
+    <!-- Controles derecha -->
+    <div class="toolbar-right">
+
+      <!-- Toggle de vista -->
+      <div class="view-toggle">
+        <button [class.active]="view() === 'day'" (click)="view.set('day')" title="Vista día">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="7" height="18" x="3" y="3" rx="1"/>
+            <rect width="7" height="18" x="14" y="3" rx="1"/>
+          </svg>
+        </button>
+        <button [class.active]="view() === 'list'" (click)="view.set('list')" title="Vista lista">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <circle cx="3" cy="6" r="1" fill="currentColor"/>
+            <circle cx="3" cy="12" r="1" fill="currentColor"/>
+            <circle cx="3" cy="18" r="1" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nueva cita -->
+      <button class="btn-new-apt" (click)="openNewModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva cita
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Filtro por empleado -->
+  @if (employees().length > 1) {
+    <div class="emp-filter-bar">
+      <button class="emp-filter-btn" [class.active]="filterEmpId() === 'all'" (click)="filterEmpId.set('all')">
+        Todos
+      </button>
+      @for (emp of employees(); track emp.id) {
+        <button class="emp-filter-btn" [class.active]="filterEmpId() === emp.id"
+                (click)="filterEmpId.set(emp.id)">
+          <span class="emp-dot" [style.background]="emp.color"></span>
+          {{ emp.name }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════
+       LOADING / ERROR
+  ═══════════════════════════════════════════════════ -->
+  @if (loading()) {
+    <div class="agenda-loading">
+      <div class="loading-spinner"></div>
+      <span>Cargando agenda...</span>
+    </div>
+  } @else if (error()) {
+    <div class="agenda-error">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ error() }}
+      <button (click)="loadAppointments()">Reintentar</button>
+    </div>
+  } @else {
+
+    <!-- ═══════════════════════════════════════════════════
+         VISTA DÍA — Columnas por empleado
+    ═══════════════════════════════════════════════════ -->
+    @if (view() === 'day') {
+      <div class="day-view">
+
+        <!-- Header de empleados -->
+        <div class="emp-header">
+          <div class="time-gutter-header"></div>
+          @for (emp of filteredEmployees(); track emp.id; let last = $last) {
+            <div class="emp-col-header" [class.last]="last">
+              <div class="emp-col-avatar" [style.background]="emp.color + '28'" [style.border-color]="emp.color + '50'" [style.color]="emp.color">
+                {{ emp.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="emp-col-name">{{ emp.name }}</div>
+              <div class="emp-col-count">{{ appointmentsForEmployee(emp.id).length }} cita{{ appointmentsForEmployee(emp.id).length !== 1 ? 's' : '' }}</div>
+            </div>
+          }
+        </div>
+
+        <!-- Grilla scrolleable -->
+        <div class="grid-scroll">
+          <div class="grid-inner" [style.height.px]="gridHeight">
+
+            <!-- Columna de horas -->
+            <div class="time-column">
+              @for (h of hours; track h) {
+                <div class="hour-label" [style.top.px]="(h - 8) * 80">
+                  {{ h.toString().padStart(2, '0') }}:00
+                </div>
+              }
+            </div>
+
+            <!-- Columnas de empleados -->
+            @for (emp of filteredEmployees(); track emp.id; let last = $last) {
+              <div class="emp-column" [class.last]="last" (click)="onColumnClick($event, emp)">
+
+                <!-- Líneas de hora -->
+                @for (h of hours; track h) {
+                  <div class="hour-line" [style.top.px]="(h - 8) * 80"></div>
+                  <div class="half-line" [style.top.px]="(h - 8) * 80 + 40"></div>
+                }
+
+                <!-- Citas -->
+                @for (apt of appointmentsForEmployee(emp.id); track apt.id) {
+                  <div class="apt-block"
+                       [class]="'apt-status-' + apt.status"
+                       [style.top.px]="aptTop(apt)"
+                       [style.height.px]="aptHeight(apt)"
+                       [style.border-left-color]="emp.color"
+                       [style.background]="emp.color + '12'"
+                       (click)="$event.stopPropagation(); openDetail(apt)">
+                    <div class="apt-time">{{ formatTime(apt.start_time) }} — {{ formatTime(apt.end_time) }}</div>
+                    <div class="apt-client">{{ apt.client.name }}</div>
+                    <div class="apt-service">{{ apt.service.name }}
+                      @if (apt.price_charged) {
+                        <span class="apt-price"> · S/ {{ apt.price_charged }}</span>
+                      }
+                    </div>
+                    <div class="apt-status-dot" [style.background]="statusColor(apt.status)"></div>
+                  </div>
+                }
+
+              </div>
+            }
+
+            <!-- Línea de hora actual -->
+            @if (nowPct() >= 0) {
+              <div class="now-line" [style.top.px]="nowPct()">
+                <div class="now-dot"></div>
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <!-- Estado vacío -->
+        @if (filteredEmployees().length === 0) {
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect width="18" height="18" x="3" y="4" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+              <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+            </svg>
+            <p>No hay barberos activos</p>
+            <span>Agrega empleados desde la sección Equipo</span>
+          </div>
+        } @else if (appointments().length === 0) {
+          <div class="empty-day">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect width="18" height="18" x="3" y="4" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <p>Sin citas para este día</p>
+            <button class="empty-cta" (click)="openNewModal()">
+              + Crear primera cita
+            </button>
+          </div>
+        }
+
+      </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════
+         VISTA LISTA
+    ═══════════════════════════════════════════════════ -->
+    @if (view() === 'list') {
+      <div class="list-view">
+
+        @if (filteredListAppointments().length === 0) {
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect width="18" height="18" x="3" y="4" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <p>Sin citas para este día</p>
+            <button class="empty-cta" (click)="openNewModal()">+ Crear cita</button>
+          </div>
+        } @else {
+          <div class="list-table">
+
+            <div class="list-head">
+              <div>Horario</div>
+              <div>Cliente</div>
+              <div>Servicio</div>
+              <div>Barbero</div>
+              <div>Estado</div>
+              <div>Precio</div>
+            </div>
+
+            @for (apt of filteredListAppointments(); track apt.id) {
+              <div class="list-row" (click)="openDetail(apt)">
+
+                <div class="list-cell time-cell">
+                  <span class="time-val">{{ formatTime(apt.start_time) }}</span>
+                  <span class="time-sep">—</span>
+                  <span class="time-val">{{ formatTime(apt.end_time) }}</span>
+                </div>
+
+                <div class="list-cell">
+                  <div class="cell-avatar">{{ apt.client.name.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <div class="cell-name">{{ apt.client.name }}</div>
+                    <div class="cell-sub">{{ apt.client.phone }}</div>
+                  </div>
+                </div>
+
+                <div class="list-cell">
+                  <div class="cell-name">{{ apt.service.name }}</div>
+                  <div class="cell-sub">{{ apt.service.duration_minutes }} min</div>
+                </div>
+
+                <div class="list-cell">
+                  <div class="emp-inline">
+                    <div class="emp-inline-dot" [style.background]="apt.employee.color"></div>
+                    <span class="cell-name">{{ apt.employee.name }}</span>
+                  </div>
+                </div>
+
+                <div class="list-cell">
+                  <span class="list-status-badge"
+                        [style.background]="statusColor(apt.status) + '18'"
+                        [style.color]="statusColor(apt.status)"
+                        [style.border-color]="statusColor(apt.status) + '35'">
+                    {{ statusLabel(apt.status) }}
+                  </span>
+                </div>
+
+                <div class="list-cell price-cell">
+                  S/ {{ apt.price_charged ?? apt.service.price }}
+                </div>
+
+              </div>
+            }
+
+          </div>
+        }
+      </div>
+    }
+
+  }
+
+</div>
+
+<!-- Modal -->
+@if (modalOpen()) {
+  <app-appointment-modal
+    [mode]="modalMode()"
+    [appointment]="modalAppointment()"
+    [prefillDate]="prefillDate()"
+    [prefillEmployeeId]="prefillEmpId()"
+    (closed)="onModalClosed()"
+    (saved)="onModalSaved($event)"
+    (statusChanged)="onStatusChanged($event)"
+  />
+}

@@ -1,0 +1,423 @@
+<div class="rev-page">
+
+  <!-- ══ TOP: header + KPIs ════════════════════════════════════════════ -->
+  <div class="rev-top">
+
+    <!-- Title + period selector -->
+    <div class="rev-header">
+      <div>
+        <h1 class="page-title">Ingresos</h1>
+        <p class="page-subtitle">Finanzas y rentabilidad del negocio</p>
+      </div>
+
+      <div class="period-controls">
+        <div class="period-chips">
+          <button class="pchip" [class.on]="activePeriod()==='today'"  (click)="setPeriod('today')">Hoy</button>
+          <button class="pchip" [class.on]="activePeriod()==='week'"   (click)="setPeriod('week')">Semana</button>
+          <button class="pchip" [class.on]="activePeriod()==='month'"  (click)="setPeriod('month')">Mes</button>
+          <button class="pchip" [class.on]="activePeriod()==='year'"   (click)="setPeriod('year')">Año</button>
+          <button class="pchip" [class.on]="activePeriod()==='custom'" (click)="setPeriod('custom')">Personalizado</button>
+        </div>
+        @if (activePeriod() === 'custom') {
+          <div class="custom-range">
+            <input type="date" class="date-input" [value]="customFrom()" (change)="customFrom.set($any($event.target).value)" />
+            <span class="date-sep">—</span>
+            <input type="date" class="date-input" [value]="customTo()"   (change)="customTo.set($any($event.target).value)" />
+            <button class="btn-primary btn-sm" (click)="applyCustomRange()">Aplicar</button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    @if (loadingSummary()) {
+      <div class="kpi-row">
+        @for (i of [1,2,3,4]; track i) { <div class="kpi-skeleton"></div> }
+      </div>
+    } @else if (summary(); as s) {
+      <div class="kpi-row">
+        <div class="kpi-card income">
+          <span class="kpi-label">Ingresos brutos</span>
+          <span class="kpi-value">S/ {{ s.summary.total_income | number:'1.2-2' }}</span>
+          <div class="kpi-footer">
+            <span class="kpi-sub">{{ s.by_payment_method.length }} métodos de pago</span>
+            @if (comparison(); as cmp) {
+              <span class="kpi-change" [class.up]="cmp.changes.total_income >= 0" [class.down]="cmp.changes.total_income < 0">
+                {{ cmp.changes.total_income >= 0 ? '▲' : '▼' }} {{ cmp.changes.total_income | number:'1.0-1' }}%
+              </span>
+            }
+          </div>
+        </div>
+        <div class="kpi-card expense">
+          <span class="kpi-label">Gastos</span>
+          <span class="kpi-value red">S/ {{ s.summary.total_expenses | number:'1.2-2' }}</span>
+          <div class="kpi-footer">
+            <span class="kpi-sub">Costos operativos</span>
+            @if (comparison(); as cmp) {
+              <span class="kpi-change" [class.up]="cmp.changes.total_expenses <= 0" [class.down]="cmp.changes.total_expenses > 0">
+                {{ cmp.changes.total_expenses >= 0 ? '▲' : '▼' }} {{ cmp.changes.total_expenses | number:'1.0-1' }}%
+              </span>
+            }
+          </div>
+        </div>
+        <div class="kpi-card commission">
+          <span class="kpi-label">Comisiones pagadas</span>
+          <span class="kpi-value amber">S/ {{ s.summary.total_commissions | number:'1.2-2' }}</span>
+          <div class="kpi-footer">
+            <span class="kpi-sub">Liquidadas en el periodo</span>
+            @if (comparison(); as cmp) {
+              <span class="kpi-change" [class.up]="cmp.changes.total_commissions <= 0" [class.down]="cmp.changes.total_commissions > 0">
+                {{ cmp.changes.total_commissions >= 0 ? '▲' : '▼' }} {{ cmp.changes.total_commissions | number:'1.0-1' }}%
+              </span>
+            }
+          </div>
+        </div>
+        <div class="kpi-card profit" [class.positive]="s.summary.net_profit >= 0" [class.negative]="s.summary.net_profit < 0">
+          <span class="kpi-label">Utilidad neta</span>
+          <span class="kpi-value gold">S/ {{ s.summary.net_profit | number:'1.2-2' }}</span>
+          <div class="kpi-footer">
+            <span class="kpi-sub">{{ profitPercent() | number:'1.0-1' }}% del ingreso</span>
+            @if (comparison(); as cmp) {
+              <span class="kpi-change" [class.up]="cmp.changes.net_profit >= 0" [class.down]="cmp.changes.net_profit < 0">
+                {{ cmp.changes.net_profit >= 0 ? '▲' : '▼' }} {{ cmp.changes.net_profit | number:'1.0-1' }}%
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="kpi-row">
+        @for (i of [1,2,3,4]; track i) { <div class="kpi-skeleton"></div> }
+      </div>
+    }
+
+    <!-- Tabs -->
+    <div class="rev-tabs">
+      <button class="rtab" [class.active]="activeTab()==='resumen'"    (click)="switchTab('resumen')">Resumen</button>
+      <button class="rtab" [class.active]="activeTab()==='ingresos'"   (click)="switchTab('ingresos')">Ingresos</button>
+      <button class="rtab" [class.active]="activeTab()==='gastos'"     (click)="switchTab('gastos')">Gastos</button>
+      <button class="rtab" [class.active]="activeTab()==='comisiones'" (click)="switchTab('comisiones')">Comisiones</button>
+      <button class="rtab" [class.active]="activeTab()==='pagos'"      (click)="switchTab('pagos')">Historial pagos</button>
+    </div>
+  </div>
+
+  <!-- ══ BODY: scrollable tab content ════════════════════════════════ -->
+  <div class="rev-body">
+
+    <!-- ── Tab: Resumen ─────────────────────────────────────────────── -->
+    @if (activeTab() === 'resumen') {
+      <div class="tab-grid">
+
+        <!-- Chart -->
+        <div class="chart-card">
+          <div class="card-header">
+            <span class="card-title">Ingresos diarios</span>
+            @if (loadingDaily()) { <span class="mini-spin"></span> }
+          </div>
+          @if (dailyData().length > 0) {
+            <apx-chart
+              [series]="chartOptions().series"
+              [chart]="chartOptions().chart"
+              [stroke]="chartOptions().stroke"
+              [fill]="chartOptions().fill"
+              [xaxis]="chartOptions().xaxis"
+              [yaxis]="chartOptions().yaxis"
+              [grid]="chartOptions().grid"
+              [dataLabels]="chartOptions().dataLabels"
+              [tooltip]="chartOptions().tooltip"
+              [markers]="chartOptions().markers"
+            ></apx-chart>
+          } @else if (!loadingDaily()) {
+            <div class="empty-chart">Sin datos en el periodo</div>
+          }
+        </div>
+
+        <!-- By payment method -->
+        <div class="breakdown-card">
+          <div class="card-header"><span class="card-title">Métodos de pago</span></div>
+          @if (summary()?.by_payment_method?.length) {
+            @for (m of summary()!.by_payment_method; track m.method) {
+              <div class="breakdown-row">
+                <div class="brow-info">
+                  <span class="brow-label">{{ methodLabel(m.method) }}</span>
+                  <span class="brow-count">{{ m.count }} citas</span>
+                </div>
+                <div class="brow-bar-wrap">
+                  <div class="brow-bar" [style.width.%]="(m.total / (summary()!.summary.total_income || 1)) * 100"></div>
+                </div>
+                <span class="brow-amount">S/ {{ m.total | number:'1.0-0' }}</span>
+              </div>
+            }
+          } @else {
+            <p class="empty-tab">Sin datos</p>
+          }
+        </div>
+
+        <!-- By employee -->
+        <div class="breakdown-card">
+          <div class="card-header"><span class="card-title">Por barbero</span></div>
+          @if (summary()?.by_employee?.length) {
+            @for (e of summary()!.by_employee; track e.employee_id) {
+              <div class="breakdown-row">
+                <div class="brow-avatar">{{ initials(e.employee_name ?? '?') }}</div>
+                <div class="brow-info">
+                  <span class="brow-label">{{ e.employee_name ?? 'Sin nombre' }}</span>
+                  <span class="brow-count">{{ e.count }} servicios</span>
+                </div>
+                <div class="brow-bar-wrap">
+                  <div class="brow-bar emp" [style.width.%]="(e.total / maxByEmployee()) * 100"></div>
+                </div>
+                <span class="brow-amount">S/ {{ e.total | number:'1.0-0' }}</span>
+              </div>
+            }
+          } @else {
+            <p class="empty-tab">Sin datos</p>
+          }
+        </div>
+
+        <!-- By service -->
+        <div class="breakdown-card">
+          <div class="card-header"><span class="card-title">Por servicio</span></div>
+          @if (summary()?.by_service?.length) {
+            @for (s of summary()!.by_service; track s.service_id) {
+              <div class="breakdown-row">
+                <div class="brow-info">
+                  <span class="brow-label">{{ s.service_name ?? 'Servicio' }}</span>
+                  <span class="brow-count">{{ s.count }} veces</span>
+                </div>
+                <div class="brow-bar-wrap">
+                  <div class="brow-bar svc" [style.width.%]="(s.total / maxByService()) * 100"></div>
+                </div>
+                <span class="brow-amount">S/ {{ s.total | number:'1.0-0' }}</span>
+              </div>
+            }
+          } @else {
+            <p class="empty-tab">Sin datos</p>
+          }
+        </div>
+
+      </div>
+    }
+
+    <!-- ── Tab: Ingresos ─────────────────────────────────────────────── -->
+    @if (activeTab() === 'ingresos') {
+      <div class="list-section">
+        <div class="section-header">
+          <span class="section-title">{{ incomeMeta().total }} registros de ingreso</span>
+        </div>
+
+        @if (loadingIncome()) {
+          <div class="state-center"><div class="spinner"></div></div>
+        } @else if (incomeList().length === 0) {
+          <div class="state-center empty-col">
+            <span class="empty-icon">💰</span>
+            <p>Sin ingresos en este periodo.</p>
+          </div>
+        } @else {
+          <div class="data-table">
+            <div class="dt-head">
+              <span>Fecha</span><span>Barbero</span><span>Servicio</span>
+              <span>Método</span><span class="col-right">Monto</span>
+            </div>
+            @for (rec of incomeList(); track rec.id) {
+              <div class="dt-row">
+                <span class="dt-date">{{ formatShortDate(rec.date) }}</span>
+                <span class="dt-cell">{{ rec.employee?.name ?? '—' }}</span>
+                <span class="dt-cell muted">{{ rec.service?.name ?? '—' }}</span>
+                <span class="dt-badge">{{ methodLabel(rec.payment_method) }}</span>
+                <span class="dt-amount">S/ {{ rec.gross_amount | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+
+          @if (incomeMeta().last_page > 1) {
+            <div class="pagination">
+              <button class="page-btn" (click)="loadIncome(incomeMeta().current_page - 1)"
+                      [disabled]="incomeMeta().current_page === 1">‹</button>
+              <span class="page-info">{{ incomeMeta().current_page }} / {{ incomeMeta().last_page }}</span>
+              <button class="page-btn" (click)="loadIncome(incomeMeta().current_page + 1)"
+                      [disabled]="incomeMeta().current_page === incomeMeta().last_page">›</button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- ── Tab: Gastos ───────────────────────────────────────────────── -->
+    @if (activeTab() === 'gastos') {
+      <div class="list-section">
+        <div class="section-header">
+          <span class="section-title">{{ expenseMeta().total }} gastos registrados</span>
+          <button class="btn-primary" (click)="openExpenseDrawer()">+ Nuevo gasto</button>
+        </div>
+
+        @if (loadingExpenses()) {
+          <div class="state-center"><div class="spinner"></div></div>
+        } @else if (expenseList().length === 0) {
+          <div class="state-center empty-col">
+            <span class="empty-icon">🧾</span>
+            <p>Sin gastos en este periodo.</p>
+            <button class="btn-primary" (click)="openExpenseDrawer()">Registrar primer gasto</button>
+          </div>
+        } @else {
+          <div class="data-table">
+            <div class="dt-head">
+              <span>Fecha</span><span>Categoría</span><span>Descripción</span>
+              <span class="col-right">Monto</span><span></span>
+            </div>
+            @for (exp of expenseList(); track exp.id) {
+              <div class="dt-row">
+                <span class="dt-date">{{ formatShortDate(exp.date) }}</span>
+                <span class="dt-badge cat">{{ exp.category }}</span>
+                <span class="dt-cell">{{ exp.description }}</span>
+                <span class="dt-amount red">S/ {{ exp.amount | number:'1.2-2' }}</span>
+                <button class="icon-btn delete-btn" (click)="deleteExpense(exp.id)"
+                        [disabled]="deletingExpenseId() === exp.id">
+                  @if (deletingExpenseId() === exp.id) { <span class="mini-spin"></span> }
+                  @else {
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <path d="M3 5h10M6 5V3h4v2M7 8v4M9 8v4M4 5l.8 8h6.4L12 5"
+                            stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (expenseMeta().last_page > 1) {
+            <div class="pagination">
+              <button class="page-btn" (click)="loadExpenses(expenseMeta().current_page - 1)"
+                      [disabled]="expenseMeta().current_page === 1">‹</button>
+              <span class="page-info">{{ expenseMeta().current_page }} / {{ expenseMeta().last_page }}</span>
+              <button class="page-btn" (click)="loadExpenses(expenseMeta().current_page + 1)"
+                      [disabled]="expenseMeta().current_page === expenseMeta().last_page">›</button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- ── Tab: Comisiones ───────────────────────────────────────────── -->
+    @if (activeTab() === 'comisiones') {
+      <div class="list-section">
+        <div class="section-header">
+          <span class="section-title">Comisiones pendientes de pago</span>
+        </div>
+
+        @if (loadingComm()) {
+          <div class="state-center"><div class="spinner"></div></div>
+        } @else if (commissions().length === 0) {
+          <div class="state-center empty-col">
+            <span class="empty-icon">✅</span>
+            <p>No hay comisiones pendientes.</p>
+          </div>
+        } @else {
+          <div class="comm-grid">
+            @for (c of commissions(); track c.employee_id) {
+              <div class="comm-card">
+                <div class="comm-avatar">{{ initials(c.employee_name ?? '?') }}</div>
+                <div class="comm-info">
+                  <span class="comm-name">{{ c.employee_name }}</span>
+                  <span class="comm-detail">{{ c.records.length }} cita{{ c.records.length !== 1 ? 's' : '' }} pendientes</span>
+                </div>
+                <div class="comm-amount">S/ {{ c.pending_total | number:'1.2-2' }}</div>
+                <button class="btn-primary btn-sm" (click)="payCommission(c.employee_id)"
+                        [disabled]="payingEmployeeId() === c.employee_id">
+                  @if (payingEmployeeId() === c.employee_id) { <span class="mini-spin"></span> Pagando… }
+                  @else { Pagar }
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Tab: Historial pagos ──────────────────────────────────────── -->
+    @if (activeTab() === 'pagos') {
+      <div class="list-section">
+        <div class="section-header">
+          <span class="section-title">{{ payoutMeta().total }} pagos realizados</span>
+        </div>
+
+        @if (loadingPayouts()) {
+          <div class="state-center"><div class="spinner"></div></div>
+        } @else if (payoutList().length === 0) {
+          <div class="state-center empty-col">
+            <span class="empty-icon">💸</span>
+            <p>Sin pagos en este periodo.</p>
+          </div>
+        } @else {
+          <div class="data-table">
+            <div class="dt-head">
+              <span>Fecha</span><span>Empleado</span><span>Notas</span>
+              <span class="col-right">Monto</span>
+            </div>
+            @for (p of payoutList(); track p.id) {
+              <div class="dt-row">
+                <span class="dt-date">{{ formatDate(p.paid_at) }}</span>
+                <span class="dt-cell">{{ p.employee?.name ?? '—' }}</span>
+                <span class="dt-cell muted">{{ p.notes ?? '—' }}</span>
+                <span class="dt-amount gold">S/ {{ p.amount | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+
+          @if (payoutMeta().last_page > 1) {
+            <div class="pagination">
+              <button class="page-btn" (click)="loadPayouts(payoutMeta().current_page - 1)"
+                      [disabled]="payoutMeta().current_page === 1">‹</button>
+              <span class="page-info">{{ payoutMeta().current_page }} / {{ payoutMeta().last_page }}</span>
+              <button class="page-btn" (click)="loadPayouts(payoutMeta().current_page + 1)"
+                      [disabled]="payoutMeta().current_page === payoutMeta().last_page">›</button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+  </div><!-- /rev-body -->
+</div>
+
+<!-- ══ Expense drawer ════════════════════════════════════════════════ -->
+@if (expenseDrawer()) {
+  <div class="modal-backdrop" (click)="closeExpenseDrawer()"></div>
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Registrar gasto</h2>
+      <button class="modal-close" (click)="closeExpenseDrawer()">✕</button>
+    </div>
+    <div class="modal-body">
+      @if (expenseFormError()) {
+        <div class="form-error-banner">{{ expenseFormError() }}</div>
+      }
+      <div class="field">
+        <label class="field-label">Categoría</label>
+        <select class="field-input field-select" [(ngModel)]="expenseForm.category">
+          @for (cat of CATEGORIES; track cat) { <option [value]="cat">{{ cat }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Descripción <span class="req">*</span></label>
+        <input class="field-input" type="text" placeholder="Ej: Compra de productos" [(ngModel)]="expenseForm.description" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Monto (S/) <span class="req">*</span></label>
+          <input class="field-input" type="number" min="0" step="0.01" placeholder="0.00" [(ngModel)]="expenseForm.amount" />
+        </div>
+        <div class="field">
+          <label class="field-label">Fecha <span class="req">*</span></label>
+          <input class="field-input" type="date" [(ngModel)]="expenseForm.date" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="closeExpenseDrawer()">Cancelar</button>
+      <button class="btn-primary" (click)="saveExpense()" [disabled]="savingExpense()">
+        @if (savingExpense()) { <span class="mini-spin"></span> Guardando… } @else { Guardar gasto }
+      </button>
+    </div>
+  </div>
+}

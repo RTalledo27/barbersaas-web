@@ -1,0 +1,255 @@
+<div class="svc-page">
+
+  <!-- ── Sticky top ──────────────────────────────────────────────────── -->
+  <div class="svc-top">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="svc-header">
+    <div>
+      <h1 class="svc-title">Servicios</h1>
+      <p class="svc-subtitle">Catálogo de servicios del negocio</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <span class="btn-icon">+</span> Nuevo servicio
+    </button>
+  </div>
+
+  <!-- ── Stats ───────────────────────────────────────────────────────── -->
+  <div class="svc-stats">
+    <div class="stat-card">
+      <span class="stat-label">Activos</span>
+      <span class="stat-value">{{ totalActive() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Inactivos</span>
+      <span class="stat-value muted">{{ totalInactive() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Precio promedio</span>
+      <span class="stat-value gold">S/ {{ avgPrice() | number:'1.0-0' }}</span>
+    </div>
+  </div>
+
+  <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+  <div class="svc-toolbar">
+    <!-- Search -->
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M13 13l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Buscar servicio o categoría…"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+      />
+    </div>
+
+    <!-- Category filter -->
+    <div class="filter-tabs">
+      <button class="filter-tab" [class.active]="filterCat() === 'all'" (click)="filterCat.set('all')">Todas</button>
+      @for (cat of categories(); track cat) {
+        <button
+          class="filter-tab"
+          [class.active]="filterCat() === cat"
+          (click)="filterCat.set(cat)"
+        >{{ cat }}</button>
+      }
+    </div>
+
+    <!-- Active filter -->
+    <div class="active-tabs">
+      <button class="active-tab" [class.active]="filterActive() === 'all'"      (click)="filterActive.set('all')">Todos</button>
+      <button class="active-tab" [class.active]="filterActive() === 'active'"   (click)="filterActive.set('active')">Activos</button>
+      <button class="active-tab" [class.active]="filterActive() === 'inactive'" (click)="filterActive.set('inactive')">Inactivos</button>
+    </div>
+  </div>
+
+  </div><!-- /svc-top -->
+
+  <!-- ── Scroll area ─────────────────────────────────────────────────── -->
+  <div class="svc-scroll">
+
+  <!-- ── Loading / Error ─────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="svc-loading">
+      <div class="spinner"></div>
+      <span>Cargando servicios…</span>
+    </div>
+  } @else if (error()) {
+    <div class="svc-error">
+      <span>{{ error() }}</span>
+      <button class="btn-ghost" (click)="load()">Reintentar</button>
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="svc-empty">
+      <div class="empty-icon">✂</div>
+      <p>No hay servicios que coincidan con los filtros.</p>
+      <button class="btn-primary" (click)="openCreate()">Crear primer servicio</button>
+    </div>
+  } @else {
+
+    <!-- ── Service grid ─────────────────────────────────────────────── -->
+    <div class="svc-grid">
+      @for (s of filtered(); track s.id) {
+        <div class="svc-card" [class.inactive]="!s.is_active">
+
+          <!-- Card top -->
+          <div class="card-top">
+            <div class="card-name-row">
+              @if (s.category) {
+                <span class="cat-badge" [style.background]="categoryColor(s.category) + '22'" [style.color]="categoryColor(s.category)">
+                  {{ s.category }}
+                </span>
+              }
+              <h3 class="card-name">{{ s.name }}</h3>
+            </div>
+            <div class="card-toggle">
+              <label class="toggle-switch">
+                <input type="checkbox" [checked]="s.is_active" (change)="toggleActive(s)" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card meta -->
+          <div class="card-meta">
+            <div class="meta-item">
+              <svg class="meta-icon" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              <span>{{ durationLabel(s.duration_minutes) }}</span>
+            </div>
+            <div class="meta-price">S/ {{ s.price | number:'1.0-0' }}</div>
+          </div>
+
+          <!-- Card actions -->
+          <div class="card-actions">
+            <button class="action-btn edit-btn" (click)="openEdit(s)">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+              Editar
+            </button>
+            <button class="action-btn delete-btn" (click)="askDelete(s)" [disabled]="deleting() === s.id">
+              @if (deleting() === s.id) {
+                <span class="mini-spin"></span>
+              } @else {
+                <svg viewBox="0 0 16 16" fill="none">
+                  <path d="M3 5h10M6 5V3h4v2M7 8v4M9 8v4M4 5l.8 8h6.4L12 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              Eliminar
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  }
+
+  </div><!-- /svc-scroll -->
+
+</div>
+
+<!-- ══ Modal create / edit ══════════════════════════════════════════════ -->
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h2>{{ modalMode() === 'create' ? 'Nuevo servicio' : 'Editar servicio' }}</h2>
+      <button class="modal-close" (click)="closeModal()">✕</button>
+    </div>
+
+    <form class="modal-body" (ngSubmit)="onSubmit()">
+
+      @if (formError()) {
+        <div class="form-error-banner">{{ formError() }}</div>
+      }
+
+      <!-- Nombre -->
+      <div class="field">
+        <label class="field-label">Nombre <span class="req">*</span></label>
+        <input class="field-input" type="text" placeholder="Ej: Corte clásico" [(ngModel)]="form.name" name="name" />
+      </div>
+
+      <!-- Descripción -->
+      <div class="field">
+        <label class="field-label">Descripción</label>
+        <textarea class="field-input field-textarea" placeholder="Descripción opcional…" [(ngModel)]="form.description" name="description" rows="2"></textarea>
+      </div>
+
+      <!-- Duración + Buffer -->
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Duración (min) <span class="req">*</span></label>
+          <input class="field-input" type="number" min="5" max="480" step="5" [(ngModel)]="form.duration_minutes" name="duration_minutes" />
+        </div>
+        <div class="field">
+          <label class="field-label">Buffer (min)</label>
+          <input class="field-input" type="number" min="0" max="60" step="5" [(ngModel)]="form.buffer_minutes" name="buffer_minutes" />
+        </div>
+      </div>
+
+      <!-- Precio + Categoría -->
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Precio (S/) <span class="req">*</span></label>
+          <input class="field-input" type="number" min="0" step="0.5" [(ngModel)]="form.price" name="price" />
+        </div>
+        <div class="field">
+          <label class="field-label">Categoría</label>
+          <input class="field-input" type="text" placeholder="Ej: Cabello" [(ngModel)]="form.category" name="category" list="cat-list" />
+          <datalist id="cat-list">
+            @for (cat of categories(); track cat) {
+              <option [value]="cat"></option>
+            }
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Activo -->
+      <div class="field field-inline">
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="form.is_active" name="is_active" />
+          <span class="toggle-track"></span>
+        </label>
+        <span class="field-label">Servicio activo</span>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          @if (saving()) {
+            <span class="mini-spin"></span> Guardando…
+          } @else {
+            {{ modalMode() === 'create' ? 'Crear servicio' : 'Guardar cambios' }}
+          }
+        </button>
+      </div>
+
+    </form>
+  </div>
+}
+
+<!-- ══ Delete confirm ═══════════════════════════════════════════════════ -->
+@if (deleteConfirmId()) {
+  <div class="modal-backdrop" (click)="cancelDelete()"></div>
+  <div class="confirm-panel">
+    <div class="confirm-icon">🗑</div>
+    <h3 class="confirm-title">¿Eliminar servicio?</h3>
+    <p class="confirm-body">Se eliminará <strong>{{ deleteConfirmName() }}</strong>. Esta acción no se puede deshacer.</p>
+    <div class="confirm-actions">
+      <button class="btn-ghost" (click)="cancelDelete()">Cancelar</button>
+      <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleting() !== null">
+        @if (deleting()) { <span class="mini-spin"></span> } Eliminar
+      </button>
+    </div>
+  </div>
+}

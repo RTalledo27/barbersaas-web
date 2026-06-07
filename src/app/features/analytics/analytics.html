@@ -1,0 +1,299 @@
+<div class="ana-page">
+
+  <!-- ══ TOP ═══════════════════════════════════════════════════════════ -->
+  <div class="ana-top">
+    <div class="ana-header">
+      <div>
+        <h1 class="page-title">Estadísticas</h1>
+        <p class="page-subtitle">Análisis de rendimiento y flujo de caja</p>
+      </div>
+
+      <div class="period-controls">
+        <div class="period-chips">
+          <button class="pchip" [class.on]="activePeriod()==='week'"   (click)="setPeriod('week')">Semana</button>
+          <button class="pchip" [class.on]="activePeriod()==='month'"  (click)="setPeriod('month')">Mes</button>
+          <button class="pchip" [class.on]="activePeriod()==='year'"   (click)="setPeriod('year')">Año</button>
+          <button class="pchip" [class.on]="activePeriod()==='custom'" (click)="setPeriod('custom')">Personalizado</button>
+        </div>
+        @if (activePeriod() === 'custom') {
+          <div class="custom-range">
+            <input type="date" class="date-input" [value]="customFrom()" (change)="customFrom.set($any($event.target).value)" />
+            <span class="date-sep">—</span>
+            <input type="date" class="date-input" [value]="customTo()"   (change)="customTo.set($any($event.target).value)" />
+            <button class="btn-primary btn-sm" (click)="applyCustom()">Aplicar</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BODY ══════════════════════════════════════════════════════════ -->
+  <div class="ana-body">
+
+    @if (loading()) {
+      <div class="state-center"><div class="spinner"></div><span>Calculando estadísticas…</span></div>
+    } @else if (error()) {
+      <div class="state-center error-text">{{ error() }} <button class="btn-ghost" (click)="loadAll()">Reintentar</button></div>
+    } @else {
+
+      <!-- ── Fila 1: KPIs comparativa + Ticket promedio + Meta ──────── -->
+      <div class="stats-grid-top">
+
+        <!-- Comparativa vs periodo anterior -->
+        @if (comparison(); as cmp) {
+          <div class="card comp-card">
+            <div class="card-header">
+              <span class="card-title">vs. Periodo anterior</span>
+              <span class="card-sub">{{ cmp.previous_period.from }} → {{ cmp.previous_period.to }}</span>
+            </div>
+            <div class="comp-rows">
+              <div class="comp-row">
+                <span class="comp-label">Ingresos</span>
+                <div class="comp-vals">
+                  <span class="comp-prev">S/ {{ cmp.previous.total_income | number:'1.0-0' }}</span>
+                  <span class="comp-arrow">→</span>
+                  <span class="comp-curr">S/ {{ cmp.current.total_income | number:'1.0-0' }}</span>
+                </div>
+                <span class="change-badge" [class]="changeBadge(cmp.changes.total_income).cls">
+                  {{ changeBadge(cmp.changes.total_income).icon }} {{ cmp.changes.total_income | number:'1.0-1' }}%
+                </span>
+              </div>
+              <div class="comp-row">
+                <span class="comp-label">Gastos</span>
+                <div class="comp-vals">
+                  <span class="comp-prev">S/ {{ cmp.previous.total_expenses | number:'1.0-0' }}</span>
+                  <span class="comp-arrow">→</span>
+                  <span class="comp-curr">S/ {{ cmp.current.total_expenses | number:'1.0-0' }}</span>
+                </div>
+                <span class="change-badge" [class]="changeBadge(-cmp.changes.total_expenses).cls">
+                  {{ cmp.changes.total_expenses >= 0 ? '▲' : '▼' }} {{ cmp.changes.total_expenses | number:'1.0-1' }}%
+                </span>
+              </div>
+              <div class="comp-row">
+                <span class="comp-label">Utilidad</span>
+                <div class="comp-vals">
+                  <span class="comp-prev">S/ {{ cmp.previous.net_profit | number:'1.0-0' }}</span>
+                  <span class="comp-arrow">→</span>
+                  <span class="comp-curr gold">S/ {{ cmp.current.net_profit | number:'1.0-0' }}</span>
+                </div>
+                <span class="change-badge" [class]="changeBadge(cmp.changes.net_profit).cls">
+                  {{ changeBadge(cmp.changes.net_profit).icon }} {{ cmp.changes.net_profit | number:'1.0-1' }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Ticket promedio -->
+        @if (peak(); as pk) {
+          <div class="card ticket-card">
+            <div class="card-header"><span class="card-title">Ticket promedio</span></div>
+            <div class="ticket-value">S/ {{ pk.avg_ticket | number:'1.2-2' }}</div>
+            <div class="ticket-sub">por cita · {{ pk.total_appointments }} citas en el periodo</div>
+            <div class="ticket-bar-wrap">
+              <div class="ticket-bar"></div>
+            </div>
+          </div>
+        }
+
+        <!-- Meta mensual -->
+        <div class="card goal-card">
+          <div class="card-header">
+            <span class="card-title">Meta del periodo</span>
+            @if (goalValue() > 0 && !editingGoal()) {
+              <button class="goal-edit-btn" (click)="openGoalEdit()">✎</button>
+            }
+          </div>
+
+          @if (editingGoal()) {
+            <!-- Edit mode -->
+            <div class="goal-edit-row">
+              <span class="goal-currency">S/</span>
+              <input
+                class="goal-input"
+                type="number" min="0" step="100"
+                placeholder="5000"
+                [value]="goalDraft()"
+                (input)="goalDraft.set(+$any($event.target).value)"
+                (keydown.enter)="saveGoal()"
+                autofocus
+              />
+              <button class="goal-save-btn" (click)="saveGoal()">Guardar</button>
+              <button class="goal-cancel-btn" (click)="editingGoal.set(false)">✕</button>
+            </div>
+
+          } @else if (goalValue() > 0) {
+            <!-- Progress mode -->
+            <div class="goal-display">
+              <div class="goal-amounts">
+                <span class="goal-current">S/ {{ (summary()?.summary?.total_income ?? 0) | number:'1.0-0' }}</span>
+                <span class="goal-sep">/</span>
+                <span class="goal-target">S/ {{ goalValue() | number:'1.0-0' }}</span>
+              </div>
+              <div class="goal-bar-track">
+                <div class="goal-bar-fill" [style.width.%]="goalProgress()"></div>
+              </div>
+              <div class="goal-footer">
+                <span class="goal-pct">{{ goalProgress() | number:'1.0-1' }}% completado</span>
+                @if (goalProgress() >= 100) {
+                  <span class="goal-achieved">🎉 ¡Meta alcanzada!</span>
+                } @else {
+                  <span class="goal-remaining">
+                    Faltan S/ {{ (goalValue() - (summary()?.summary?.total_income ?? 0)) | number:'1.0-0' }}
+                  </span>
+                }
+              </div>
+            </div>
+
+          } @else {
+            <!-- Empty mode -->
+            <div class="goal-empty" (click)="openGoalEdit()">
+              <div class="goal-empty-icon">🎯</div>
+              <p class="goal-empty-text">Define una meta de ingresos</p>
+              <span class="goal-empty-hint">Haz clic para establecer</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ── Flujo de caja ───────────────────────────────────────────── -->
+      <div class="card full-card">
+        <div class="card-header">
+          <span class="card-title">Flujo de caja</span>
+          <div class="chart-legend">
+            <span class="legend-dot gold"></span><span>Ingresos</span>
+            <span class="legend-dot red"></span><span>Gastos</span>
+            <span class="legend-dot green"></span><span>Saldo acumulado</span>
+          </div>
+        </div>
+        @if (cashFlowChart(); as cfg) {
+          <apx-chart
+            [series]="cfg.series"
+            [chart]="cfg.chart"
+            [stroke]="cfg.stroke"
+            [fill]="cfg.fill"
+            [colors]="cfg.colors"
+            [plotOptions]="cfg.plotOptions"
+            [xaxis]="cfg.xaxis"
+            [yaxis]="cfg.yaxis"
+            [grid]="cfg.grid"
+            [dataLabels]="cfg.dataLabels"
+            [tooltip]="cfg.tooltip"
+            [legend]="cfg.legend"
+          ></apx-chart>
+        } @else {
+          <div class="empty-chart">Sin datos en el periodo seleccionado</div>
+        }
+      </div>
+
+      <!-- ── Fila 3: Días pico + Horas pico ─────────────────────────── -->
+      @if (peak(); as pk) {
+        <div class="stats-grid-2">
+
+          <!-- Días de la semana -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Días más rentables</span></div>
+            <div class="peak-list">
+              @for (d of pk.by_day; track d.day_index) {
+                <div class="peak-row">
+                  <span class="peak-label">{{ d.day_name.slice(0,3) }}</span>
+                  <div class="peak-bar-wrap">
+                    <div class="peak-bar" [style.width.%]="(d.count / maxDayCount()) * 100"
+                         [ngStyle]="{'background': heatColor(d.count, maxDayCount())}"></div>
+                  </div>
+                  <span class="peak-count">{{ d.count }}</span>
+                  <span class="peak-amount">S/ {{ d.total | number:'1.0-0' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Horas del día -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Horas pico</span></div>
+            <div class="hour-grid">
+              @for (h of pk.by_hour; track h.hour) {
+                <div class="hour-cell" [title]="h.label + ' · ' + h.count + ' citas'"
+                     [ngStyle]="{'background': heatColor(h.count, maxHourCount())}">
+                  <span class="hour-label">{{ h.label }}</span>
+                  @if (h.count > 0) { <span class="hour-count">{{ h.count }}</span> }
+                </div>
+              }
+            </div>
+            <div class="heat-legend">
+              <span>Menos</span>
+              <div class="heat-grad"></div>
+              <span>Más</span>
+            </div>
+          </div>
+
+        </div>
+      }
+
+      <!-- ── Fila 4: Top clientes + Margen por servicio ─────────────── -->
+      <div class="stats-grid-2">
+
+        <!-- Top 10 clientes -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top clientes por gasto</span></div>
+          @if (topClients().length === 0) {
+            <p class="empty-tab">Sin datos disponibles.</p>
+          } @else {
+            <div class="top-list">
+              @for (c of topClients(); track c.id; let i = $index) {
+                <div class="top-row">
+                  <span class="top-rank" [class.gold]="i < 3">#{{ i + 1 }}</span>
+                  <div class="top-avatar" [class.vip]="c.is_vip">{{ initials(c.name) }}</div>
+                  <div class="top-info">
+                    <span class="top-name">{{ c.name }}</span>
+                    <span class="top-meta">{{ c.total_visits }} visitas</span>
+                  </div>
+                  @if (c.is_vip) { <span class="vip-badge">VIP</span> }
+                  <span class="top-amount">S/ {{ c.total_spent | number:'1.0-0' }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Margen por servicio -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Margen por servicio</span>
+            <span class="card-sub">(estimado tras comisiones)</span>
+          </div>
+          @if (serviceMargins().length === 0) {
+            <p class="empty-tab">Sin datos disponibles.</p>
+          } @else {
+            <div class="margin-list">
+              @for (s of serviceMargins(); track s.service_id) {
+                <div class="margin-row">
+                  <div class="margin-info">
+                    <span class="margin-name">{{ s.service_name ?? 'Servicio' }}</span>
+                    <span class="margin-count">{{ s.count }} servicios · S/ {{ s.total | number:'1.0-0' }} total</span>
+                  </div>
+                  <div class="margin-bar-wrap">
+                    <div class="margin-bar"
+                         [style.width.%]="(s.total / maxServiceMargin()) * 100"
+                         [class.high]="s.margin_pct >= 70"
+                         [class.mid]="s.margin_pct >= 40 && s.margin_pct < 70"
+                         [class.low]="s.margin_pct < 40">
+                    </div>
+                  </div>
+                  <span class="margin-pct" [class.high]="s.margin_pct >= 70"
+                        [class.mid]="s.margin_pct >= 40 && s.margin_pct < 70"
+                        [class.low]="s.margin_pct < 40">
+                    {{ s.margin_pct | number:'1.0-1' }}%
+                  </span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+
+    }<!-- /else loaded -->
+
+  </div><!-- /ana-body -->
+</div>

@@ -23,13 +23,18 @@
     #0A0A0A;
 }
 
-/* Área de contenido — scroll interno solo en desktop */
+/* Área de contenido — sin padding propio, cada página controla el suyo */
 .app-content {
   flex: 1;
-  padding: 32px 40px;
-  overflow-y: auto;
-  /* Scroll interno: la barra lateral permanece fija mientras el contenido scrollea */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;          /* cada página gestiona su propio scroll */
   height: calc(100vh - 64px);
+}
+
+/* El router-outlet no ocupa espacio; el componente routed usa flex:1 via :host */
+.app-content > router-outlet {
+  display: none;
 }
 
 .app-content::-webkit-scrollbar { width: 4px; }
@@ -76,12 +81,8 @@
   }
 
   .app-content {
-    padding: 24px 20px;
-    /* En móvil: scroll natural del navegador, sin scroll interno.
-       Permite que la barra de navegación del browser se oculte
-       y que los gestos funcionen correctamente. */
     height: auto;
-    overflow-y: visible;
+    overflow: visible;
   }
 }
 
@@ -90,6 +91,7 @@
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
   .app-content {
-    padding: 16px 14px;
+    height: auto;
+    overflow: visible;
   }
 }

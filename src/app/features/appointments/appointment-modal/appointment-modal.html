@@ -1,0 +1,438 @@
+<!-- Backdrop -->
+<div class="modal-backdrop" (click)="close()"></div>
+
+<!-- Panel -->
+<div class="modal-panel">
+
+  <!-- Header -->
+  <div class="modal-header">
+    @if (mode === 'create') {
+      <div class="modal-title">Nueva cita</div>
+    } @else {
+      <div class="modal-title-row">
+        <div class="modal-title">Detalle de cita</div>
+        @if (appointment) {
+          <span class="status-badge" [style.background]="statusColor() + '18'" [style.color]="statusColor()" [style.borderColor]="statusColor() + '40'">
+            {{ appointment.status_label }}
+          </span>
+        }
+      </div>
+    }
+    <button class="modal-close" (click)="close()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MODO: DETALLE
+  ═══════════════════════════════════ -->
+  @if (mode === 'detail' && appointment) {
+    <div class="modal-body">
+
+      <!-- Info principal -->
+      <div class="detail-section">
+        <div class="detail-row">
+          <div class="detail-emp-dot" [style.background]="appointment.employee.color"></div>
+          <div class="detail-info">
+            <div class="detail-label">Empleado</div>
+            <div class="detail-value">{{ appointment.employee.name }}</div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-cell">
+            <div class="detail-label">Fecha</div>
+            <div class="detail-value">{{ formatDate(appointment.date) }}</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-label">Horario</div>
+            <div class="detail-value">{{ formatTime(appointment.start_time) }} — {{ formatTime(appointment.end_time) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-divider"></div>
+
+      <!-- Cliente -->
+      <div class="detail-section">
+        <div class="section-title">Cliente</div>
+        <div class="detail-client">
+          <div class="client-avatar">{{ appointment.client.name.charAt(0).toUpperCase() }}</div>
+          <div>
+            <div class="detail-value">{{ appointment.client.name }}</div>
+            <div class="detail-label">{{ appointment.client.phone }}</div>
+            @if (appointment.client.email) {
+              <div class="detail-label">{{ appointment.client.email }}</div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-divider"></div>
+
+      <!-- Servicio y precio -->
+      <div class="detail-section">
+        <div class="section-title">Servicio</div>
+        <div class="detail-grid">
+          <div class="detail-cell">
+            <div class="detail-label">Servicio</div>
+            <div class="detail-value">{{ appointment.service.name }}</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-label">Duración</div>
+            <div class="detail-value">{{ appointment.service.duration_minutes }} min</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-label">Precio</div>
+            <div class="detail-value price">S/ {{ appointment.price_charged ?? appointment.service.price }}</div>
+          </div>
+        </div>
+      </div>
+
+      @if (appointment.notes || appointment.client_notes) {
+        <div class="detail-divider"></div>
+        <div class="detail-section">
+          <div class="section-title">Notas</div>
+          @if (appointment.notes) {
+            <div class="note-text">{{ appointment.notes }}</div>
+          }
+          @if (appointment.client_notes) {
+            <div class="note-text note-client">{{ appointment.client_notes }}</div>
+          }
+        </div>
+      }
+
+      <!-- Voucher / Comprobante de pago -->
+      <div class="detail-divider"></div>
+      <div class="detail-section">
+        <div class="section-title">Comprobante de pago</div>
+
+        @if (voucherLoading()) {
+          <div class="voucher-loading">
+            <span class="btn-spinner"></span> Subiendo comprobante…
+          </div>
+        } @else if (effectiveVoucherUrl) {
+          <div class="voucher-preview-wrap">
+            @if (isPdf(effectiveVoucherUrl)) {
+              <a class="voucher-pdf-link" [href]="effectiveVoucherUrl" target="_blank">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="24" height="24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Ver PDF
+              </a>
+            } @else {
+              <a [href]="effectiveVoucherUrl" target="_blank">
+                <img class="voucher-img" [src]="effectiveVoucherUrl" alt="Comprobante" />
+              </a>
+            }
+            <div class="voucher-actions-row">
+              <label class="voucher-replace-btn">
+                <input type="file" accept="image/*,.pdf" (change)="onVoucherSelected($event)" hidden />
+                Reemplazar
+              </label>
+              <button class="voucher-delete-btn" (click)="doDeleteVoucher()">Eliminar</button>
+            </div>
+          </div>
+        } @else {
+          <label class="voucher-upload-zone">
+            <input type="file" accept="image/*,.pdf" (change)="onVoucherSelected($event)" hidden />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span class="voucher-upload-label">Subir comprobante</span>
+            <span class="voucher-upload-hint">JPG, PNG, PDF · máx 5 MB</span>
+          </label>
+        }
+      </div>
+
+      <!-- Acciones -->
+      @if (!isTerminal()) {
+        <div class="detail-divider"></div>
+        <div class="detail-section">
+          <div class="section-title">Acciones</div>
+
+          <!-- Error inline -->
+          @if (error()) {
+            <div class="form-error-banner" style="margin-bottom:12px">{{ error() }}</div>
+          }
+
+          <!-- Botones principales -->
+          @if (!showCancelForm() && !showCompleteForm()) {
+            <div class="actions-grid">
+              @if (canConfirm()) {
+                <button class="action-btn action-confirm"
+                        [disabled]="actionLoading() !== null"
+                        (click)="doConfirm()">
+                  @if (actionLoading() === 'confirm') { <span class="btn-spinner"></span> }
+                  @else {
+                    <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                      <path d="M3 8l4 4 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                  Confirmar cita
+                </button>
+              }
+              @if (canComplete()) {
+                <button class="action-btn action-complete"
+                        [disabled]="actionLoading() !== null"
+                        (click)="openCompleteForm()">
+                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M5 8l2.5 2.5L11 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Marcar completada
+                </button>
+              }
+              @if (canNoShow()) {
+                <button class="action-btn action-noshow"
+                        [disabled]="actionLoading() !== null"
+                        (click)="doNoShow()">
+                  @if (actionLoading() === 'noshow') { <span class="btn-spinner"></span> }
+                  @else {
+                    <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M8 5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <circle cx="8" cy="11" r="0.8" fill="currentColor"/>
+                    </svg>
+                  }
+                  No se presentó
+                </button>
+              }
+              @if (canCancel()) {
+                <button class="action-btn action-cancel"
+                        [disabled]="actionLoading() !== null"
+                        (click)="openCancelForm()">
+                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Cancelar cita
+                </button>
+              }
+            </div>
+          }
+
+          <!-- ── Formulario: COMPLETAR ─────────────────────────── -->
+          @if (showCompleteForm()) {
+            <div class="complete-form">
+              <div class="complete-form-header">
+                <div class="complete-form-icon">✓</div>
+                <div>
+                  <div class="complete-form-title">Completar cita</div>
+                  <div class="complete-form-sub">
+                    {{ appointment.client.name }} · S/ {{ appointment.price_charged ?? appointment.service.price }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estado del pago -->
+              <div class="form-field-sm">
+                <label>Estado del pago <span class="required">*</span></label>
+                <div class="pay-status-group">
+                  @for (ps of PAY_STATUSES; track ps.value) {
+                    <button type="button"
+                            class="pay-status-btn"
+                            [class.selected]="completePayStatus === ps.value"
+                            (click)="completePayStatus = ps.value">
+                      <span class="pay-status-icon">{{ ps.icon }}</span>
+                      {{ ps.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Método de pago -->
+              @if (completePayStatus !== 'pending') {
+                <div class="form-field-sm">
+                  <label>Método de pago</label>
+                  <div class="pay-method-group">
+                    @for (pm of PAY_METHODS; track pm.value) {
+                      <button type="button"
+                              class="pay-method-btn"
+                              [class.selected]="completePayMethod === pm.value"
+                              (click)="completePayMethod = pm.value">
+                        {{ pm.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="complete-form-actions">
+                <button class="action-btn action-complete" (click)="doComplete()"
+                        [disabled]="actionLoading() !== null">
+                  @if (actionLoading() === 'complete') { <span class="btn-spinner"></span> Procesando… }
+                  @else { Confirmar y completar }
+                </button>
+                <button class="action-btn action-ghost" (click)="showCompleteForm.set(false)">
+                  Volver
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ── Formulario: CANCELAR ──────────────────────────── -->
+          @if (showCancelForm()) {
+            <div class="inline-form">
+              <div class="inline-form-title">¿Cancelar esta cita?</div>
+              <div class="form-field-sm">
+                <label>Motivo (opcional)</label>
+                <input type="text" [(ngModel)]="cancelReason"
+                       placeholder="Ej: cliente solicitó cancelación" />
+              </div>
+              <div class="inline-form-actions">
+                <button class="action-btn action-cancel" (click)="doCancel()"
+                        [disabled]="actionLoading() !== null">
+                  @if (actionLoading() === 'cancel') { <span class="btn-spinner"></span> }
+                  Sí, cancelar cita
+                </button>
+                <button class="action-btn action-ghost" (click)="showCancelForm.set(false)">
+                  Volver
+                </button>
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════
+       MODO: CREAR
+  ═══════════════════════════════════ -->
+  @if (mode === 'create') {
+    <div class="modal-body">
+
+      @if (error()) {
+        <div class="form-error-banner">{{ error() }}</div>
+      }
+
+      <form (ngSubmit)="onSubmit()" #createForm="ngForm">
+
+        <!-- Cliente -->
+        <div class="form-group">
+          <label class="form-label">Cliente <span class="required">*</span></label>
+          <div class="client-search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="text"
+              class="form-input has-icon"
+              placeholder="Buscar por nombre, email o teléfono..."
+              [value]="clientSearch()"
+              (input)="onClientInput($any($event.target).value)"
+            />
+            @if (clientSearching()) {
+              <span class="search-spinner"></span>
+            }
+          </div>
+          @if (clientResults().length > 0) {
+            <div class="client-dropdown">
+              @for (c of clientResults(); track c.id) {
+                <button type="button" class="client-option" (click)="selectClient(c)">
+                  <div class="client-opt-avatar">{{ c.name.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <div class="client-opt-name">{{ c.name }}</div>
+                    <div class="client-opt-meta">{{ c.phone }}{{ c.email ? ' · ' + c.email : '' }}</div>
+                  </div>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Empleado -->
+        <div class="form-group">
+          <label class="form-label">Barbero <span class="required">*</span></label>
+          <div class="select-wrapper">
+            <select class="form-select" [(ngModel)]="form.employee_id" name="employee_id"
+                    (change)="onEmployeeChange()" required>
+              <option value="">Seleccionar barbero</option>
+              @for (emp of employees(); track emp.id) {
+                <option [value]="emp.id">{{ emp.name }}</option>
+              }
+            </select>
+            @if (form.employee_id) {
+              <div class="emp-color-dot"
+                   [style.background]="employeeColor(form.employee_id)"></div>
+            }
+          </div>
+        </div>
+
+        <!-- Servicio -->
+        <div class="form-group">
+          <label class="form-label">Servicio <span class="required">*</span></label>
+          <select class="form-select" [(ngModel)]="form.service_id" name="service_id"
+                  (change)="onServiceChange(form.service_id)" required>
+            <option value="">Seleccionar servicio</option>
+            @for (svc of services(); track svc.id) {
+              <option [value]="svc.id">{{ svc.name }} — S/ {{ svc.price }} ({{ svc.duration_minutes }} min)</option>
+            }
+          </select>
+        </div>
+
+        <!-- Fecha y hora -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha <span class="required">*</span></label>
+            <input type="date" class="form-input" [(ngModel)]="form.date" name="date"
+                   [min]="todayStr()" (change)="onDateChange()" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hora <span class="required">*</span></label>
+            @if (loadingSlots()) {
+              <div class="slots-loading">Cargando horarios...</div>
+            } @else if (slots().length > 0) {
+              <div class="slots-grid">
+                @for (slot of slots(); track slot) {
+                  <button type="button"
+                          class="slot-btn"
+                          [class.selected]="form.start_time === slot"
+                          (click)="form.start_time = slot">
+                    {{ slot }}
+                  </button>
+                }
+              </div>
+            } @else if (form.employee_id && form.service_id && form.date) {
+              <div class="slots-empty">Sin horarios disponibles</div>
+            } @else {
+              <div class="slots-hint">Selecciona barbero, servicio y fecha</div>
+            }
+          </div>
+        </div>
+
+        <!-- Precio -->
+        <div class="form-group">
+          <label class="form-label">Precio (S/)</label>
+          <input type="number" class="form-input" [(ngModel)]="form.price_charged"
+                 name="price_charged" min="0" step="0.50" />
+        </div>
+
+        <!-- Notas -->
+        <div class="form-group">
+          <label class="form-label">Notas internas</label>
+          <textarea class="form-input form-textarea" [(ngModel)]="form.notes"
+                    name="notes" rows="2"
+                    placeholder="Ej: cliente prefiere tijera, no máquina..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" (click)="close()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="btn-spinner"></span> }
+            Crear cita
+          </button>
+        </div>
+
+      </form>
+    </div>
+  }
+
+</div>

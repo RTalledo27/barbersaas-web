@@ -1,0 +1,315 @@
+<div class="team-page">
+
+  <div class="team-top">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="team-header">
+    <div>
+      <h1 class="team-title">Equipo</h1>
+      <p class="team-subtitle">Gestión de empleados y horarios</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <span class="btn-icon">+</span> Nuevo empleado
+    </button>
+  </div>
+
+  <!-- ── Stats ───────────────────────────────────────────────────────── -->
+  <div class="team-stats">
+    <div class="stat-card">
+      <span class="stat-label">Activos</span>
+      <span class="stat-value">{{ totalActive() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Inactivos</span>
+      <span class="stat-value muted">{{ totalInactive() }}</span>
+    </div>
+  </div>
+
+  <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+  <div class="team-toolbar">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M13 13l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Buscar empleado…"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+      />
+    </div>
+    <div class="active-tabs">
+      <button class="active-tab" [class.active]="filterActive()==='all'"      (click)="filterActive.set('all')">Todos</button>
+      <button class="active-tab" [class.active]="filterActive()==='active'"   (click)="filterActive.set('active')">Activos</button>
+      <button class="active-tab" [class.active]="filterActive()==='inactive'" (click)="filterActive.set('inactive')">Inactivos</button>
+    </div>
+  </div>
+
+  </div><!-- /team-top -->
+  <div class="team-scroll">
+
+  <!-- ── Loading / Error / Empty ─────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="team-loading">
+      <div class="spinner"></div><span>Cargando equipo…</span>
+    </div>
+  } @else if (error()) {
+    <div class="team-error">
+      {{ error() }}
+      <button class="btn-ghost" (click)="load()">Reintentar</button>
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="team-empty">
+      <div class="empty-icon">✂</div>
+      <p>No hay empleados que coincidan.</p>
+      <button class="btn-primary" (click)="openCreate()">Agregar primer empleado</button>
+    </div>
+  } @else {
+
+    <!-- ── Employee grid ─────────────────────────────────────────────── -->
+    <div class="emp-grid">
+      @for (emp of filtered(); track emp.id) {
+        <div class="emp-card" [class.inactive]="!emp.is_active">
+
+          <!-- Avatar + color bar -->
+          <div class="emp-card-top" [style.border-top-color]="emp.color">
+            <div class="emp-avatar" [style.background]="emp.color + '22'" [style.color]="emp.color">
+              {{ initials(emp.name) }}
+            </div>
+            <div class="emp-info">
+              <h3 class="emp-name">{{ emp.name }}</h3>
+              @if (emp.commission_type) {
+                <span class="emp-commission">Comisión: {{ commissionLabel(emp) }}</span>
+              }
+            </div>
+            <label class="toggle-switch" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="emp.is_active" (change)="toggleActive(emp)" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Services tags -->
+          <div class="emp-services">
+            @if ((emp.services ?? []).length === 0) {
+              <span class="no-services">Sin servicios asignados</span>
+            } @else {
+              @for (svc of emp.services.slice(0, 3); track svc.id) {
+                <span class="svc-tag">{{ svc.name }}</span>
+              }
+              @if (emp.services.length > 3) {
+                <span class="svc-tag more">+{{ emp.services.length - 3 }}</span>
+              }
+            }
+          </div>
+
+          <!-- Schedule summary -->
+          <div class="emp-schedule-row">
+            <svg class="meta-icon" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <span>{{ activeDayCount(emp) }} día{{ activeDayCount(emp) !== 1 ? 's' : '' }} activos</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="emp-actions">
+            <button class="action-btn edit-btn" (click)="openEdit(emp)">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+              Editar
+            </button>
+            <button class="action-btn delete-btn" (click)="askDelete(emp)" [disabled]="deleting() === emp.id">
+              @if (deleting() === emp.id) { <span class="mini-spin"></span> }
+              @else {
+                <svg viewBox="0 0 16 16" fill="none">
+                  <path d="M3 5h10M6 5V3h4v2M7 8v4M9 8v4M4 5l.8 8h6.4L12 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              Eliminar
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  }
+
+  </div><!-- /team-scroll -->
+</div>
+
+<!-- ══ Drawer ════════════════════════════════════════════════════════════ -->
+@if (drawerOpen()) {
+  <div class="drawer-backdrop" (click)="closeDrawer()"></div>
+  <div class="drawer-panel" (click)="$event.stopPropagation()">
+
+    <!-- Drawer header -->
+    <div class="drawer-header">
+      <h2>{{ drawerMode() === 'create' ? 'Nuevo empleado' : 'Editar empleado' }}</h2>
+      <button class="modal-close" (click)="closeDrawer()">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="drawer-tabs">
+      <button class="dtab" [class.active]="drawerTab()==='info'" (click)="drawerTab.set('info')">Información</button>
+      <button class="dtab" [class.active]="drawerTab()==='schedule'"
+        (click)="drawerTab.set('schedule')"
+        [disabled]="drawerMode()==='create' && !editingId()">
+        Horario
+      </button>
+    </div>
+
+    <!-- ── TAB: Info ─────────────────────────────────────────────────── -->
+    @if (drawerTab() === 'info') {
+      <form class="drawer-body" (ngSubmit)="onSubmitInfo()">
+
+        @if (formError()) {
+          <div class="form-error-banner">{{ formError() }}</div>
+        }
+
+        <!-- Nombre + color -->
+        <div class="field-row">
+          <div class="field" style="flex:1">
+            <label class="field-label">Nombre <span class="req">*</span></label>
+            <input class="field-input" type="text" placeholder="Ej: Carlos Mendoza" [(ngModel)]="form.name" name="name" />
+          </div>
+          <div class="field color-field">
+            <label class="field-label">Color</label>
+            <div class="color-row">
+              <input class="field-input color-text" type="text" maxlength="7" [(ngModel)]="form.color" name="color" placeholder="#C9A84C" />
+              <input class="color-picker" type="color" [(ngModel)]="form.color" name="color_pick" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div class="field">
+          <label class="field-label">Descripción / Bio</label>
+          <textarea class="field-input field-textarea" rows="2" placeholder="Especialidades, años de experiencia…" [(ngModel)]="form.bio" name="bio"></textarea>
+        </div>
+
+        <!-- Comisión -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Tipo de comisión</label>
+            <select class="field-input field-select" [(ngModel)]="form.commission_type" name="commission_type">
+              <option [ngValue]="null">Sin comisión</option>
+              <option value="percentage">Porcentaje (%)</option>
+              <option value="fixed">Monto fijo (S/)</option>
+            </select>
+          </div>
+          @if (form.commission_type) {
+            <div class="field">
+              <label class="field-label">
+                {{ form.commission_type === 'percentage' ? 'Porcentaje' : 'Monto (S/)' }}
+              </label>
+              <input class="field-input" type="number" min="0" [max]="form.commission_type === 'percentage' ? 100 : 9999" step="0.5" [(ngModel)]="form.commission_value" name="commission_value" />
+            </div>
+          }
+        </div>
+
+        <!-- Servicios -->
+        <div class="field">
+          <label class="field-label">Servicios que realiza</label>
+          <div class="services-grid">
+            @for (svc of services(); track svc.id) {
+              <button
+                type="button"
+                class="svc-toggle"
+                [class.selected]="hasService(svc.id)"
+                (click)="toggleService(svc.id)"
+              >{{ svc.name }}</button>
+            }
+            @if (services().length === 0) {
+              <span class="no-services">No hay servicios disponibles</span>
+            }
+          </div>
+        </div>
+
+        <!-- Activo -->
+        <div class="field field-inline">
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="form.is_active" name="is_active" />
+            <span class="toggle-track"></span>
+          </label>
+          <span class="field-label">Empleado activo</span>
+        </div>
+
+        <div class="drawer-footer">
+          <button type="button" class="btn-ghost" (click)="closeDrawer()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="mini-spin"></span> Guardando… }
+            @else { {{ drawerMode() === 'create' ? 'Crear y configurar horario →' : 'Guardar y ver horario →' }} }
+          </button>
+        </div>
+
+      </form>
+    }
+
+    <!-- ── TAB: Schedule ─────────────────────────────────────────────── -->
+    @if (drawerTab() === 'schedule') {
+      <div class="drawer-body">
+
+        @if (schedError()) {
+          <div class="form-error-banner">{{ schedError() }}</div>
+        }
+
+        <p class="sched-hint">Activa los días laborables y define el horario de atención.</p>
+
+        <div class="sched-table">
+          @for (row of schedule; track row.day_of_week) {
+            <div class="sched-row" [class.sched-row-active]="row.is_active">
+
+              <label class="toggle-switch sched-toggle">
+                <input type="checkbox" [(ngModel)]="row.is_active" />
+                <span class="toggle-track"></span>
+              </label>
+
+              <span class="sched-day" [class.day-dim]="!row.is_active">{{ row.day_name }}</span>
+
+              @if (row.is_active) {
+                <div class="sched-times">
+                  <input class="field-input time-input" type="time" [(ngModel)]="row.start_time" />
+                  <span class="time-sep">–</span>
+                  <input class="field-input time-input" type="time" [(ngModel)]="row.end_time" />
+                </div>
+              } @else {
+                <span class="sched-off">Día libre</span>
+              }
+
+            </div>
+          }
+        </div>
+
+        <div class="drawer-footer">
+          <button class="btn-ghost" (click)="closeDrawer()">Cerrar sin guardar</button>
+          <button class="btn-primary" (click)="onSubmitSchedule()" [disabled]="savingSched()">
+            @if (savingSched()) { <span class="mini-spin"></span> Guardando… }
+            @else { Guardar horario }
+          </button>
+        </div>
+
+      </div>
+    }
+
+  </div>
+}
+
+<!-- ══ Delete confirm ════════════════════════════════════════════════════ -->
+@if (deleteConfirmId()) {
+  <div class="drawer-backdrop" (click)="cancelDelete()"></div>
+  <div class="confirm-panel">
+    <div class="confirm-icon">🗑</div>
+    <h3 class="confirm-title">¿Eliminar empleado?</h3>
+    <p class="confirm-body">Se eliminará a <strong>{{ deleteConfirmName() }}</strong>. Esta acción no se puede deshacer.</p>
+    <div class="confirm-actions">
+      <button class="btn-ghost" (click)="cancelDelete()">Cancelar</button>
+      <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleting() !== null">
+        @if (deleting()) { <span class="mini-spin"></span> } Eliminar
+      </button>
+    </div>
+  </div>
+}

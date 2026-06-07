@@ -29,10 +29,19 @@
           <span class="avatar-initial">{{ initial() }}</span>
         }
       </div>
-      <div class="avatar-info">
-        <div class="avatar-name">{{ user()?.name ?? 'Usuario' }}</div>
-        <div class="avatar-role">{{ roleLabel() }}</div>
-        <div class="avatar-email">{{ user()?.email }}</div>
+      <div class="avatar-name">{{ user()?.name ?? 'Usuario' }}</div>
+      <div class="avatar-role">{{ roleLabel() }}</div>
+      <div class="avatar-email">{{ user()?.email }}</div>
+      <div class="avatar-divider"></div>
+      <div class="avatar-stat-row">
+        <div class="avatar-stat">
+          <div class="avatar-stat-val">{{ user()?.role === 'owner' ? '∞' : '—' }}</div>
+          <div class="avatar-stat-lbl">Acceso</div>
+        </div>
+        <div class="avatar-stat">
+          <div class="avatar-stat-val">Pro</div>
+          <div class="avatar-stat-lbl">Plan</div>
+        </div>
       </div>
     </div>
 

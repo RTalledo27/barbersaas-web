@@ -53,6 +53,7 @@ export class TopbarComponent {
     '/app/payments':     { title: 'Caja',          subtitle: 'Cobros y comprobantes' },
     '/app/revenue':      { title: 'Ingresos',      subtitle: 'Caja, gastos y comisiones' },
     '/app/analytics':    { title: 'Estadísticas',  subtitle: 'Reportes y métricas' },
+    '/app/profile':      { title: 'Mi perfil',      subtitle: 'Datos de tu cuenta' },
     '/app/settings':     { title: 'Configuración', subtitle: 'Ajustes de la barbería' },
   };
 

@@ -39,6 +39,12 @@ export const routes: Routes = [
     title: 'Perfil de cliente — BarberOS'
   },
   {
+    path: 'profile',
+    loadComponent: () => import('../../../../features/profile/profile')
+      .then(m => m.ProfileComponent),
+    title: 'Mi perfil — BarberOS'
+  },
+  {
     path: 'settings',
     loadComponent: () => import('../../../../features/settings/settings')
       .then(m => m.SettingsComponent),

@@ -1,0 +1,117 @@
+<div class="page-wrapper">
+
+  <div class="page-header">
+    <h1 class="page-title">Mi perfil</h1>
+    <p class="page-subtitle">Datos de tu cuenta personal</p>
+  </div>
+
+  <!-- Mensajes -->
+  @if (success()) {
+    <div class="alert-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      {{ success() }}
+    </div>
+  }
+  @if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  }
+
+  <div class="profile-layout">
+
+    <!-- ── Avatar card ─────────────────────────────────────────────── -->
+    <div class="avatar-card">
+      <div class="avatar-circle">
+        @if (form.avatar_url) {
+          <img [src]="form.avatar_url" class="avatar-img" alt="Avatar" />
+        } @else {
+          <span class="avatar-initial">{{ initial() }}</span>
+        }
+      </div>
+      <div class="avatar-info">
+        <div class="avatar-name">{{ user()?.name ?? 'Usuario' }}</div>
+        <div class="avatar-role">{{ roleLabel() }}</div>
+        <div class="avatar-email">{{ user()?.email }}</div>
+      </div>
+    </div>
+
+    <!-- ── Datos personales ────────────────────────────────────────── -->
+    <div class="settings-card">
+      <div class="card-title">Datos personales</div>
+
+      <div class="fields-grid">
+        <div class="field-group">
+          <label class="field-label">Nombre completo</label>
+          <input class="field-input" type="text" [(ngModel)]="form.name"
+                 placeholder="Tu nombre" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Teléfono</label>
+          <input class="field-input" type="tel" [(ngModel)]="form.phone"
+                 placeholder="+51 999 999 999" />
+        </div>
+        <div class="field-group span-2">
+          <label class="field-label">URL de avatar</label>
+          <input class="field-input" type="url" [(ngModel)]="form.avatar_url"
+                 placeholder="https://mi-foto.com/avatar.jpg" />
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="save-btn" (click)="save()" [disabled]="saving()">
+          @if (saving()) { <span class="btn-spinner"></span> Guardando… }
+          @else { Guardar cambios }
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Contraseña ──────────────────────────────────────────────── -->
+    <div class="settings-card">
+      <div class="card-title">Seguridad</div>
+
+      @if (passwordSuccess()) {
+        <div class="alert-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          {{ passwordSuccess() }}
+        </div>
+      }
+
+      @if (!showPasswordForm()) {
+        <button class="change-password-btn" (click)="showPasswordForm.set(true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Cambiar contraseña
+        </button>
+      } @else {
+        <div class="password-form">
+          @if (passwordError()) {
+            <div class="alert-error" style="font-size:12px">{{ passwordError() }}</div>
+          }
+          <div class="field-group">
+            <label class="field-label">Nueva contraseña</label>
+            <input class="field-input" type="password" [(ngModel)]="passwordForm.password"
+                   placeholder="Mínimo 8 caracteres" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Confirmar contraseña</label>
+            <input class="field-input" type="password" [(ngModel)]="passwordForm.password_confirmation"
+                   placeholder="Repite la nueva contraseña" />
+          </div>
+          <div class="password-actions">
+            <button class="save-btn" (click)="savePassword()" [disabled]="savingPassword()">
+              @if (savingPassword()) { <span class="btn-spinner"></span> }
+              Actualizar contraseña
+            </button>
+            <button class="cancel-btn" (click)="showPasswordForm.set(false)">Cancelar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>

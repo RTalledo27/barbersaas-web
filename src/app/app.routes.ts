@@ -1,5 +1,10 @@
 import { Routes } from '@angular/router';
 
+const isSubdomain = (): boolean => {
+  const parts = window.location.hostname.split('.');
+  return parts.length >= 3 && parts[0] !== 'www';
+};
+
 export const routes: Routes = [
   {
     path: 'auth',
@@ -16,6 +21,21 @@ export const routes: Routes = [
       .then(m => m.routes)
   },
 
+
+  // Dev local: localhost:4200/booking/prueba
+  {
+    path: 'booking/:slug',
+    loadComponent: () => import('./features/booking/booking').then(m => m.BookingComponent),
+    title: 'Reservar cita — BarberOS'
+  },
+
+  // Producción con subdominio: prueba.barberos.com (raíz)
+  {
+    path: '',
+    canMatch: [() => isSubdomain()],
+    loadComponent: () => import('./features/booking/booking').then(m => m.BookingComponent),
+    title: 'Reservar cita — BarberOS'
+  },
 
   {
     path: '',

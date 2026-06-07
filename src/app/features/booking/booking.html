@@ -1,0 +1,494 @@
+<!-- ── Loading / Error ─────────────────────────────────────────────────────── -->
+@if (loadingInit()) {
+  <div class="splash">
+    <div class="splash-spinner"></div>
+  </div>
+} @else if (initError()) {
+  <div class="splash">
+    <div class="splash-error-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 14s1.5-2 4-2 4 2 4 2"/>
+        <line x1="9" y1="9" x2="9.01" y2="9"/>
+        <line x1="15" y1="9" x2="15.01" y2="9"/>
+      </svg>
+    </div>
+    <div class="splash-error-title">Barbería no encontrada</div>
+    <p class="splash-msg">El enlace que seguiste no corresponde a ninguna barbería activa.</p>
+    <div class="splash-footer-brand">Powered by <span>BarberOS</span></div>
+  </div>
+} @else {
+
+  <div class="portal-wrap">
+
+    <!-- ── Header ────────────────────────────────────────────────────────── -->
+    <header class="portal-header">
+      <div class="header-inner">
+        <div class="brand">
+          @if (tenant()?.logo_url) {
+            <img [src]="tenant()!.logo_url!" class="brand-logo" alt="Logo" />
+          } @else {
+            <div class="brand-initial">{{ initial(tenant()?.name ?? '') }}</div>
+          }
+          <div class="brand-info">
+            <div class="brand-name">{{ tenant()?.name }}</div>
+            @if (tenant()?.city) {
+              <div class="brand-city">{{ tenant()?.city }}</div>
+            }
+          </div>
+        </div>
+        @if (step() !== 'done') {
+          <div class="header-tag">Reservar cita</div>
+        }
+      </div>
+    </header>
+
+    <!-- ── Stepper ───────────────────────────────────────────────────────── -->
+    @if (step() !== 'done') {
+      <div class="stepper-wrap">
+        <div class="stepper">
+          @for (s of steps; track s.key; let i = $index) {
+            <div class="step-item" [class.active]="stepIndex() === i" [class.done]="stepIndex() > i">
+              <div class="step-dot">
+                @if (stepIndex() > i) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                } @else { {{ i + 1 }} }
+              </div>
+              <span class="step-label">{{ s.label }}</span>
+            </div>
+            @if (i < steps.length - 1) {
+              <div class="step-line" [class.done]="stepIndex() > i"></div>
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Main ──────────────────────────────────────────────────────────── -->
+    <main class="portal-main">
+
+      <!-- ══ STEP 1 — Servicios (multi-select) ═══════════════════════════ -->
+      @if (step() === 'service') {
+        <div class="step-panel">
+          <div class="step-heading">
+            <h2 class="step-title">¿Qué necesitas hoy?</h2>
+            <p class="step-sub">Selecciona uno o varios servicios</p>
+          </div>
+
+          <div class="services-grid">
+            @for (svc of services(); track svc.id) {
+              <button class="service-card" (click)="toggleService(svc)"
+                      [class.selected]="isServiceSelected(svc)">
+                <div class="service-check-wrap">
+                  <div class="service-check">
+                    @if (isServiceSelected(svc)) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="13" height="13">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                    }
+                  </div>
+                </div>
+                <div class="service-card-body">
+                  <div class="service-name">{{ svc.name }}</div>
+                  @if (svc.description) {
+                    <div class="service-desc">{{ svc.description }}</div>
+                  }
+                  <div class="service-meta">
+                    <span class="service-duration">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {{ svc.duration_minutes }} min
+                    </span>
+                    <span class="service-price">{{ formatPrice(svc.price, tenantCurrency()) }}</span>
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+
+          <!-- Barra de resumen + botón continuar -->
+          @if (hasServices()) {
+            <div class="selection-bar">
+              <div class="selection-summary">
+                <div class="selection-count">{{ selectedServices().length }} servicio{{ selectedServices().length > 1 ? 's' : '' }}</div>
+                <div class="selection-details">
+                  <span>{{ formatDuration(totalDuration()) }}</span>
+                  <span class="sel-dot">·</span>
+                  <span class="selection-total">{{ formatPrice(totalPrice(), tenantCurrency()) }}</span>
+                </div>
+              </div>
+              <button class="continue-btn" (click)="goToEmployee()">
+                Continuar
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ══ STEP 2 — Barbero ════════════════════════════════════════════ -->
+      @if (step() === 'employee') {
+        <div class="step-panel">
+          <div class="step-heading">
+            <h2 class="step-title">Elige tu barbero</h2>
+            <p class="step-sub">Disponibles para todos tus servicios</p>
+          </div>
+
+          <!-- Resumen de servicios seleccionados -->
+          <div class="services-chips">
+            @for (svc of selectedServices(); track svc.id) {
+              <div class="service-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                {{ svc.name }}
+              </div>
+            }
+            <div class="chip-total">{{ formatDuration(totalDuration()) }} · {{ formatPrice(totalPrice(), tenantCurrency()) }}</div>
+          </div>
+
+          @if (loadingEmployees()) {
+            <div class="loading-row"><div class="mini-spinner"></div> Buscando barberos…</div>
+          } @else if (employees().length === 0) {
+            <div class="empty-employees">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" style="color:#333">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+              <p>Ningún barbero ofrece todos los servicios seleccionados.<br>Prueba con otra combinación.</p>
+            </div>
+          } @else {
+            <div class="employees-grid">
+              @for (emp of employees(); track emp.id) {
+                <button class="emp-card" (click)="selectEmployee(emp)">
+                  <div class="emp-avatar">
+                    @if (emp.avatar_url) {
+                      <img [src]="emp.avatar_url" alt="{{ emp.name }}" class="emp-img" />
+                    } @else {
+                      <span class="emp-initial">{{ initial(emp.name) }}</span>
+                    }
+                  </div>
+                  <div class="emp-name">{{ emp.name }}</div>
+                  @if (emp.bio) { <div class="emp-bio">{{ emp.bio }}</div> }
+                  <div class="emp-select-badge">Seleccionar</div>
+                </button>
+              }
+            </div>
+          }
+
+          <button class="back-link" (click)="goBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Cambiar servicios
+          </button>
+        </div>
+      }
+
+      <!-- ══ STEP 3 — Fecha & Hora ═══════════════════════════════════════ -->
+      @if (step() === 'datetime') {
+        <div class="step-panel datetime-panel">
+          <div class="step-heading">
+            <h2 class="step-title">¿Cuándo te venimos bien?</h2>
+            <p class="step-sub">{{ selectedEmployee()?.name }} · {{ formatDuration(totalDuration()) }} en total</p>
+          </div>
+
+          <div class="datetime-layout">
+
+            <!-- Calendario -->
+            <div class="calendar-card">
+              <div class="cal-nav">
+                <button class="cal-nav-btn" (click)="prevMonth()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                <span class="cal-month">{{ calendarMonthLabel() }}</span>
+                <button class="cal-nav-btn" (click)="nextMonth()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="cal-grid">
+                @for (d of ['Lu','Ma','Mi','Ju','Vi','Sá','Do']; track d) {
+                  <div class="cal-weekday">{{ d }}</div>
+                }
+                @if (loadingCalendar()) {
+                  <div class="cal-loading" style="grid-column:1/-1"><div class="mini-spinner"></div></div>
+                } @else {
+                  @for (cell of calendarDays(); track $index) {
+                    @if (cell === null) {
+                      <div class="cal-cell cal-empty"></div>
+                    } @else {
+                      <button class="cal-cell"
+                              [class.past]="isPastDay(cell)"
+                              [class.available]="!isPastDay(cell) && isDayAvailable(cell)"
+                              [class.unavailable]="!isPastDay(cell) && !isDayAvailable(cell)"
+                              [class.selected]="dateKey(cell) === selectedDate()"
+                              [disabled]="isPastDay(cell) || !isDayAvailable(cell)"
+                              (click)="selectDay(cell)">
+                        {{ cell }}
+                      </button>
+                    }
+                  }
+                }
+              </div>
+
+              <div class="cal-legend">
+                <div class="legend-item"><span class="legend-dot available"></span> Disponible</div>
+                <div class="legend-item"><span class="legend-dot unavailable"></span> Sin turnos</div>
+              </div>
+            </div>
+
+            <!-- Slots -->
+            <div class="slots-col">
+              @if (!selectedDate()) {
+                <div class="slots-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" style="color:#333">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <p>Selecciona una fecha para ver los horarios</p>
+                </div>
+              } @else if (loadingSlots()) {
+                <div class="loading-row"><div class="mini-spinner"></div> Cargando horarios…</div>
+              } @else if (slotsAvailable().length === 0) {
+                <div class="slots-placeholder">
+                  <p style="color:#555">Sin turnos disponibles.<br>Prueba otra fecha.</p>
+                </div>
+              } @else {
+                <div class="slots-header">
+                  <div class="slots-date-label">{{ selectedDateLabel() }}</div>
+                  <div class="slots-count">{{ slotsAvailable().length }} turnos</div>
+                </div>
+                <div class="slots-grid">
+                  @for (slot of slots(); track slot.start) {
+                    <button class="slot-btn"
+                            [class.unavail]="!slot.available"
+                            [class.selected]="selectedSlot()?.start === slot.start"
+                            [disabled]="!slot.available"
+                            (click)="selectSlot(slot)">
+                      {{ slot.start }}
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (selectedSlot()) {
+                <div class="slot-selected-info">
+                  <div class="slot-selected-time">{{ selectedSlot()!.start }}</div>
+                  <button class="next-btn" (click)="goToInfo()">
+                    Continuar
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <button class="back-link" (click)="goBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Cambiar barbero
+          </button>
+        </div>
+      }
+
+      <!-- ══ STEP 4 — Datos ══════════════════════════════════════════════ -->
+      @if (step() === 'info') {
+        <div class="step-panel">
+
+          <!-- Resumen completo -->
+          <div class="booking-summary">
+            <div class="summary-services">
+              @for (svc of selectedServices(); track svc.id) {
+                <div class="summary-service-row">
+                  <div class="summary-service-name">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="color:#C9A84C;flex-shrink:0">
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    {{ svc.name }}
+                  </div>
+                  <div class="summary-service-price">{{ formatPrice(svc.price, tenantCurrency()) }}</div>
+                </div>
+              }
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row">
+              <span class="summary-label">Barbero</span>
+              <span class="summary-val">{{ selectedEmployee()?.name }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Fecha y hora</span>
+              <span class="summary-val">{{ selectedDateLabel() }} · {{ selectedSlot()?.start }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Duración</span>
+              <span class="summary-val">{{ formatDuration(totalDuration()) }}</span>
+            </div>
+            <div class="summary-total-row">
+              <span class="summary-total-label">Total</span>
+              <span class="summary-total-val">{{ formatPrice(totalPrice(), tenantCurrency()) }}</span>
+            </div>
+          </div>
+
+          <div class="step-heading" style="margin-top:4px">
+            <h2 class="step-title">Tus datos</h2>
+            <p class="step-sub">Solo para confirmar tu reserva</p>
+          </div>
+
+          @if (bookError()) {
+            <div class="book-error">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ bookError() }}
+            </div>
+          }
+
+          <div class="info-form">
+            <div class="form-group">
+              <label class="form-label">Nombre completo <span class="req">*</span></label>
+              <input class="form-input" type="text" [(ngModel)]="form.name"
+                     placeholder="Tu nombre" [class.err]="formErrors()['name']" />
+              @if (formErrors()['name']) { <span class="form-err">{{ formErrors()['name'] }}</span> }
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono <span class="req">*</span></label>
+              <input class="form-input" type="tel" [(ngModel)]="form.phone"
+                     placeholder="+51 999 999 999" [class.err]="formErrors()['phone']" />
+              @if (formErrors()['phone']) { <span class="form-err">{{ formErrors()['phone'] }}</span> }
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email <span class="opt">(opcional)</span></label>
+              <input class="form-input" type="email" [(ngModel)]="form.email" placeholder="tu@email.com" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Notas para el barbero <span class="opt">(opcional)</span></label>
+              <textarea class="form-textarea" [(ngModel)]="form.notes"
+                        placeholder="Ej: fade bajo, sin bigote…" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="info-actions">
+            <button class="back-link" (click)="goBack()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              Atrás
+            </button>
+            <button class="confirm-btn" (click)="confirmBooking()" [disabled]="booking()">
+              @if (booking()) { <div class="mini-spinner white"></div> Reservando… }
+              @else {
+                Confirmar reserva
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ══ DONE — Confirmación ════════════════════════════════════════ -->
+      @if (step() === 'done') {
+        <div class="done-panel">
+          <div class="done-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="32" height="32">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+          <h2 class="done-title">¡Reserva confirmada!</h2>
+          <p class="done-sub">Guarda los datos de tu cita.</p>
+
+          <!-- Ticket -->
+          <div class="ticket">
+            <div class="ticket-header">
+              <div class="ticket-brand">
+                @if (tenant()?.logo_url) {
+                  <img [src]="tenant()!.logo_url!" class="ticket-logo" alt="Logo" />
+                } @else {
+                  <div class="ticket-initial">{{ initial(tenant()?.name ?? '') }}</div>
+                }
+                <span class="ticket-shop">{{ tenant()?.name }}</span>
+              </div>
+              <div class="ticket-id">#{{ (result()?.id ?? '').slice(-6).toUpperCase() }}</div>
+            </div>
+
+            <div class="ticket-divider">
+              <span class="ticket-hole left"></span>
+              <div class="ticket-dash"></div>
+              <span class="ticket-hole right"></span>
+            </div>
+
+            <div class="ticket-body">
+              <!-- Servicios en el ticket -->
+              <div class="ticket-services">
+                @for (svc of (result()?.services ?? []); track svc.id) {
+                  <div class="ticket-service-row">
+                    <span class="ticket-service-name">{{ svc.name }}</span>
+                    <span class="ticket-service-price">{{ formatPrice(svc.price, tenantCurrency()) }}</span>
+                  </div>
+                }
+              </div>
+              <div class="ticket-sep"></div>
+              <div class="ticket-row">
+                <span class="ticket-key">Barbero</span>
+                <span class="ticket-val">{{ result()?.employee?.name }}</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-key">Fecha</span>
+                <span class="ticket-val">{{ formatDate(result()?.date ?? '') }}</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-key">Hora</span>
+                <span class="ticket-val bold">{{ result()?.start_time }}</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-key">Duración</span>
+                <span class="ticket-val">{{ formatDuration(result()?.total_duration ?? 0) }}</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-key">Cliente</span>
+                <span class="ticket-val">{{ result()?.client?.name }}</span>
+              </div>
+            </div>
+
+            <div class="ticket-footer">
+              <div class="ticket-price">{{ formatPrice(result()?.total_price ?? 0, tenantCurrency()) }}</div>
+              <div class="ticket-duration">{{ formatDuration(result()?.total_duration ?? 0) }}</div>
+            </div>
+          </div>
+
+          @if (tenant()?.phone) {
+            <a class="whatsapp-btn" [href]="'https://wa.me/' + tenant()!.phone!.replace(/\D/g,'')" target="_blank">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.127 1.532 5.863L.063 23.12a.75.75 0 0 0 .926.926l5.257-1.469A11.93 11.93 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.93 9.93 0 0 1-5.031-1.362l-.36-.214-3.733 1.044 1.044-3.732-.214-.36A9.93 9.93 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+              </svg>
+              Confirmar por WhatsApp
+            </a>
+          }
+        </div>
+      }
+
+    </main>
+
+    <footer class="portal-footer">
+      <span>Reservas online con</span>
+      <span class="footer-brand">BarberOS</span>
+    </footer>
+
+  </div>
+}
